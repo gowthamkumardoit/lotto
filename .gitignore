@@ -52,3 +52,6 @@ functions/node_modules/
 # Env / secrets
 *.env
 *.json
+
+# Firebase Functions build output
+functions/lib/
