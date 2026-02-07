@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,6 +24,8 @@ import {
 } from "lucide-react";
 
 import type { DepositRequestWithWallet } from "@/types/deposit";
+import { toast } from "sonner";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 export default function DepositReviewDrawer({
   open,
@@ -39,43 +42,62 @@ export default function DepositReviewDrawer({
 }) {
   const [note, setNote] = useState("");
 
+  const functions = getFunctions(undefined, "asia-south1");
+
+  const approveTopupFn = httpsCallable<
+    { topupId: string; note: string },
+    { success: boolean }
+  >(functions, "approveTopup");
+
+  const rejectTopupFn = httpsCallable<
+    { topupId: string; note: string },
+    { success: boolean }
+  >(functions, "rejectTopup");
+
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     if (!open) setNote("");
   }, [open]);
 
   if (!deposit) return null;
 
-  const isPending = deposit.status === "PENDING";
+  console.log("deposit", deposit);
+
+  const isPending = deposit.status === "SUBMITTED";
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-[460px] p-0">
+    <Sheet
+      open={open}
+      onOpenChange={() => {
+        if (!submitting) onClose();
+      }}
+    >
+      <SheetContent side="right" className="w-[460px] p-0 flex flex-col h-full">
         {/* Header */}
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle>Review Deposit</SheetTitle>
         </SheetHeader>
 
-        <div className="px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {/* Deposit Summary */}
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 Deposit Amount
               </span>
-              <span className="text-lg font-semibold">
-                ₹{deposit.amount}
-              </span>
+              <span className="text-lg font-semibold">₹{deposit.amount}</span>
             </div>
 
             <div className="flex gap-2">
-              <Badge variant="secondary">{deposit.method}</Badge>
+              <Badge variant="secondary">BANK / UPI</Badge>
               <Badge
                 variant={
-                  deposit.status === "PENDING"
+                  deposit.status === "SUBMITTED"
                     ? "outline"
-                    : deposit.status === "COMPLETED"
-                    ? "success"
-                    : "destructive"
+                    : deposit.status === "APPROVED"
+                      ? "success"
+                      : "destructive"
                 }
               >
                 {deposit.status}
@@ -115,37 +137,80 @@ export default function DepositReviewDrawer({
               label="Requested At"
               value={deposit.createdAt}
             />
-            <InfoRow
-              icon={Hash}
-              label="Reference"
-              value={deposit.reference}
-            />
+            <InfoRow icon={Hash} label="Reference" value={deposit.reference} />
           </Section>
 
+          {/* Proof Image */}
+          {deposit.proofUrl && (
+            <Section title="Payment Proof">
+              <div className="p-3">
+                <img
+                  src={deposit.proofUrl}
+                  alt="Payment Proof"
+                  className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition"
+                  onClick={() => window.open(deposit.proofUrl, "_blank")}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Click image to view full size
+                </p>
+              </div>
+            </Section>
+          )}
+
           {/* Admin Note */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Admin Note <span className="text-red-500">*</span>
-            </label>
-            <Textarea
-              rows={3}
-              placeholder="Explain approval or rejection reason"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={!isPending}
-            />
-            <p className="text-xs text-muted-foreground">
-              This note will be stored in audit logs.
-            </p>
-          </div>
+          <Section title="Admin Note">
+            {isPending ? (
+              <>
+                <Textarea
+                  rows={3}
+                  placeholder="Explain approval or rejection reason"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  disabled={submitting}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  This note will be stored in audit logs.
+                </p>
+              </>
+            ) : (
+              <div className="p-4 text-sm text-muted-foreground">
+                {deposit.adminNote || "—"}
+              </div>
+            )}
+          </Section>
 
           {/* Actions */}
           {isPending && (
             <div className="space-y-3">
               <Button
                 className="w-full"
-                disabled={!note}
-                onClick={() => onApprove?.(deposit, note)}
+                disabled={!note || submitting}
+                onClick={async () => {
+                  if (!deposit) return;
+
+                  setSubmitting(true);
+
+                  const toastId = toast.loading("Approving deposit…");
+
+                  try {
+                    await approveTopupFn({
+                      topupId: deposit.id,
+                      note,
+                    });
+
+                    toast.success("Deposit approved & wallet credited", {
+                      id: toastId,
+                    });
+
+                    onClose();
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to approve deposit", {
+                      id: toastId,
+                    });
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Approve & Credit Wallet
@@ -154,8 +219,33 @@ export default function DepositReviewDrawer({
               <Button
                 variant="destructive"
                 className="w-full"
-                disabled={!note}
-                onClick={() => onReject?.(deposit, note)}
+                disabled={!note || submitting}
+                onClick={async () => {
+                  if (!deposit) return;
+
+                  setSubmitting(true);
+
+                  const toastId = toast.loading("Rejecting deposit…");
+
+                  try {
+                    await rejectTopupFn({
+                      topupId: deposit.id,
+                      note,
+                    });
+
+                    toast.success("Deposit rejected", {
+                      id: toastId,
+                    });
+
+                    onClose();
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to reject deposit", {
+                      id: toastId,
+                    });
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
               >
                 <XCircle className="mr-2 h-4 w-4" />
                 Reject Deposit
@@ -188,9 +278,7 @@ function Section({
 }) {
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-muted-foreground">
-        {title}
-      </div>
+      <div className="text-sm font-medium text-muted-foreground">{title}</div>
       <div className="rounded-lg border divide-y">{children}</div>
     </div>
   );

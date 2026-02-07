@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,7 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { toast } from "sonner";
 import {
   User,
   Wallet,
@@ -36,7 +38,7 @@ type WithdrawalRequestWithWallet = {
   amount: number;
   method: "UPI" | "BANK";
   destination: string; // masked
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: "SUBMITTED" | "APPROVED" | "REJECTED";
   createdAt: string;
   wallet: WalletSnapshot;
 };
@@ -56,16 +58,35 @@ export default function WithdrawReviewDrawer({
 }) {
   const [note, setNote] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+
+  const functions = getFunctions(undefined, "asia-south1");
+
+  const approveWithdrawFn = httpsCallable<
+    { withdrawId: string; note: string },
+    { success: boolean }
+  >(functions, "approveWithdraw");
+
+  const rejectWithdrawFn = httpsCallable<
+    { withdrawId: string; note: string },
+    { success: boolean }
+  >(functions, "rejectWithdraw");
+
   useEffect(() => {
     if (!open) setNote("");
   }, [open]);
 
   if (!withdrawal) return null;
 
-  const isPending = withdrawal.status === "PENDING";
+  const isPending = withdrawal.status === "SUBMITTED";
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
+    <Sheet
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <SheetContent side="right" className="w-[460px] p-0 flex flex-col">
         {/* Header */}
         <SheetHeader className="border-b px-6 py-4 shrink-0">
@@ -85,14 +106,14 @@ export default function WithdrawReviewDrawer({
             </div>
 
             <div className="flex gap-2">
-              <Badge variant="secondary">{withdrawal.method}</Badge>
+              <Badge variant="secondary">BANK / UPI </Badge>
               <Badge
                 variant={
-                  withdrawal.status === "PENDING"
+                  withdrawal.status === "SUBMITTED"
                     ? "outline"
                     : withdrawal.status === "APPROVED"
-                    ? "success"
-                    : "destructive"
+                      ? "success"
+                      : "destructive"
                 }
               >
                 {withdrawal.status}
@@ -162,22 +183,78 @@ export default function WithdrawReviewDrawer({
             <div className="space-y-3">
               <Button
                 className="w-full"
-                disabled={!note}
-                onClick={() => onApprove?.(withdrawal, note)}
+                disabled={!note || submitting}
+                onClick={async () => {
+                  if (!withdrawal) return;
+
+                  setSubmitting(true);
+                  const toastId = toast.loading("Approving withdrawal…");
+
+                  try {
+                    await approveWithdrawFn({
+                      withdrawId: withdrawal.id,
+                      note,
+                    });
+
+                    toast.success("Withdrawal approved & transferred", {
+                      id: toastId,
+                    });
+                    onClose(); // ✅ CLOSE DRAWER
+                  } catch (err: any) {
+                    toast.error(
+                      err?.message || "Failed to approve withdrawal",
+                      {
+                        id: toastId,
+                      },
+                    );
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Approve & Debit Wallet
+                Approve & Transfer Funds
               </Button>
 
               <Button
                 variant="destructive"
                 className="w-full"
-                disabled={!note}
-                onClick={() => onReject?.(withdrawal, note)}
+                disabled={!note || submitting}
+                onClick={async () => {
+                  if (!withdrawal) return;
+
+                  setSubmitting(true);
+                  const toastId = toast.loading("Rejecting withdrawal…");
+
+                  try {
+                    await rejectWithdrawFn({
+                      withdrawId: withdrawal.id,
+                      note,
+                    });
+
+                    toast.success("Withdrawal rejected & funds released", {
+                      id: toastId,
+                    });
+                    onClose(); // ✅ CLOSE DRAWER
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to reject withdrawal", {
+                      id: toastId,
+                    });
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
               >
                 <XCircle className="mr-2 h-4 w-4" />
                 Reject & Release Funds
               </Button>
+
+              {withdrawal.wallet.locked < withdrawal.amount && (
+                <p className="text-xs text-red-500">
+                  ⚠ Locked amount is less than withdrawal amount. Check wallet
+                  integrity.
+                </p>
+              )}
             </div>
           )}
 

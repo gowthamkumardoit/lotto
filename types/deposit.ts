@@ -10,11 +10,13 @@ export type DepositRequest = {
   userPhone: string;
   amount: number;
   method: "UPI" | "BANK" | "CASH";
-  status: "PENDING" | "COMPLETED" | "REJECTED";
+  status: "SUBMITTED" | "APPROVED" | "REJECTED";
   reference: string;
   createdAt: string;
 };
 
 export type DepositRequestWithWallet = DepositRequest & {
-  wallet: WalletSnapshot; // ✅ REQUIRED here
+  wallet: WalletSnapshot;
+  proofUrl?: string;     // ✅ ADD THIS
+  adminNote?: string;    // ✅ ADD THIS/ ✅ REQUIRED here
 };

@@ -1,8 +1,8 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { requireAdminAuth } from "../../helpers/requireAdminAuth";
+import { admin, db } from "../../lib/firebaseAdmin";
 
-const db = getFirestore();
 
 /* ---------------- TYPES ---------------- */
 
@@ -46,7 +46,7 @@ export const runDraw = onCall(
     },
     async (request) => {
         /* ---------- Auth ---------- */
-        requireAdminAuth(request);
+      const adminAuth = requireAdminAuth(request);
 
         const { drawRunId } = request.data as {
             drawRunId?: string;
@@ -122,6 +122,17 @@ export const runDraw = onCall(
                 drawnAt: FieldValue.serverTimestamp(),
             });
         });
+
+        /* ───────── AUDIT LOG (AFTER TX) ───────── */
+
+        await db.collection("drawRunAudits").add({
+            drawRunId,
+            action: "DRAW_RUN_MANUAL",
+            message: "Draw Ran manually by admin",
+            actor: adminAuth.uid,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
 
         /* ---------- Response ---------- */
 

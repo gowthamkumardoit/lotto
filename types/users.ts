@@ -1,13 +1,28 @@
 // /types/user.ts
 
 export type UserRole = "user" | "admin";
-export type UserStatus = "active" | "blocked";
 
-export interface User {
-    id: string;
-    name: string;
-    phone: string;
-    role: UserRole;
-    status: UserStatus;
-    createdAt: Date;
-}
+export type UserStatus = "ACTIVE" | "BLOCKED";
+
+export type User = {
+  id: string;
+  phone: string;
+  provider: string;
+  walletBalance: number;
+  lockedBalance: number;
+  bonusBalance: number;
+  status: UserStatus; // ✅ keep status
+  createdAt: Date;
+  lastLoginAt?: Date;
+};
+
+
+// users collection shape
+export type UserProfile = {
+    uid: string;
+    username?: string;
+    displayName?: string;
+    phone?: string;
+};
+
+

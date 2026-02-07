@@ -64,12 +64,12 @@ export function UsersTable({ table, loading, onSelect }: Props) {
                   className={cn(
                     "select-none",
                     header.column.getCanSort() && "cursor-pointer",
-                    header.column.getIsSorted() && "text-primary"
+                    header.column.getIsSorted() && "text-primary",
                   )}
                 >
                   {flexRender(
                     header.column.columnDef.header,
-                    header.getContext()
+                    header.getContext(),
                   )}
                 </TableHead>
               ))}
@@ -97,7 +97,7 @@ export function UsersTable({ table, loading, onSelect }: Props) {
                             "gap-2 px-3 py-1 rounded-full",
                             u.role === "admin"
                               ? "bg-primary/15 text-primary"
-                              : "bg-zinc-500/15 text-zinc-600"
+                              : "bg-zinc-500/15 text-zinc-600",
                           )}
                         >
                           {u.role === "admin" && <Shield className="h-3 w-3" />}
@@ -108,24 +108,25 @@ export function UsersTable({ table, loading, onSelect }: Props) {
                   }
 
                   if (cell.column.id === "status") {
-                    const active = u.status === "active";
+                    const isActive = u.status === "ACTIVE";
+
                     return (
                       <TableCell key={cell.id}>
                         <Badge
                           className={cn(
                             "gap-2 px-3 py-1 rounded-full",
-                            active
+                            isActive
                               ? "bg-emerald-500/15 text-emerald-600"
-                              : "bg-red-500/15 text-red-600"
+                              : "bg-red-500/15 text-red-600",
                           )}
                         >
                           <span
                             className={cn(
                               "h-2 w-2 rounded-full",
-                              active ? "bg-emerald-500" : "bg-red-500"
+                              isActive ? "bg-emerald-500" : "bg-red-500",
                             )}
                           />
-                          {active ? "Active" : "Blocked"}
+                          {isActive ? "Active" : "Blocked"}
                         </Badge>
                       </TableCell>
                     );
@@ -149,7 +150,7 @@ export function UsersTable({ table, loading, onSelect }: Props) {
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   );

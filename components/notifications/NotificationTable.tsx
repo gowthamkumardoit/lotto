@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { Bell, Users, User } from "lucide-react";
 
 import { db } from "@/lib/firebase";
-import { NotificationFilters } from "@/app/admin/notifications/page";
+import { NotificationFilters } from "@/app/admin/(admin-only)/notifications/page";
 
 /* ---------------- Types ---------------- */
 

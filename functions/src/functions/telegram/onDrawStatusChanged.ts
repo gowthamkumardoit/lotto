@@ -1,63 +1,75 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import axios from "axios";
+import { db } from "../../lib/firebaseAdmin";
 import { formatSettledResult } from "../../helpers/formatSettledResult";
 
 const TELEGRAM_BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
 const TELEGRAM_CHANNEL_ID = defineSecret("TELEGRAM_CHANNEL_ID");
 
+const ALLOWED_STATUSES = ["OPEN", "LOCKED", "DRAWN", "SETTLED"] as const;
+
 export const onDrawStatusChanged = onDocumentUpdated(
-    {
-        document: "drawRuns/{drawRunId}",
-        region: "asia-south1",
-        secrets: [TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID],
-    },
-    async (event) => {
-        const before = event.data?.before.data();
-        const after = event.data?.after.data();
+  {
+    document: "drawRuns/{drawRunId}",
+    region: "asia-south1",
+    secrets: [TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID],
+  },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
 
-        if (!before || !after) return;
+    if (!before || !after) return;
+    if (before.status === after.status) return;
+    if (!ALLOWED_STATUSES.includes(after.status)) return;
 
-        // 🚫 Ignore if status didn't change
-        if (before.status === after.status) return;
+    const token = TELEGRAM_BOT_TOKEN.value();
+    const channelId = TELEGRAM_CHANNEL_ID.value();
 
-        const token = TELEGRAM_BOT_TOKEN.value();
-        const channelId = TELEGRAM_CHANNEL_ID.value();
+    // Load platform config
+    const configSnap = await db.doc("platformConfig/global").get();
+    const telegram = configSnap.data()?.notifications?.telegram;
 
-        let message: string | null = null;
+    if (!telegram?.templates) return;
 
-        switch (after.status) {
-            case "OPEN":
-                message = `📢 New Draw Created!\n\n🎯 ${after.name}\n⏰ ${after.time}`;
-                break;
+    const templatesForStatus = telegram.templates[after.status];
+    if (!templatesForStatus) return;
 
-            case "LOCKED":
-                message = `🔒 Draw Locked\n\n🎯 ${after.name}\n⛔ Ticket sales closed`;
-                break;
+    // 🔒 Always include English
+    const languages: Record<string, boolean> = {
+      en: true,
+      ...(telegram.languages ?? {}),
+    };
 
-            case "DRAWN":
-                message = `⏳ Results Incoming!\n\n🎯 ${after.name}\nPlease wait...`;
-                break;
+    const resultText =
+      after.status === "SETTLED"
+        ? formatSettledResult(after.settledResult)
+        : "";
 
-            case "SETTLED":
+    let message = "";
 
-                const resultText = formatSettledResult(after.settledResult);
-                message =
-                    `🏆 Draw Results Declared!\n\n` +
-                    `🎯 ${after.name}\n\n` +
-                    resultText;
+    for (const [lang, enabled] of Object.entries(languages)) {
+      if (!enabled) continue;
 
-                break;
-        }
+      const template = templatesForStatus[lang];
+      if (!template) continue;
 
-        if (!message) return;
+      const text = template
+        .replaceAll("{{name}}", after.name)
+        .replaceAll("{{result}}", resultText ?? "");
 
-        await axios.post(
-            `https://api.telegram.org/bot${token}/sendMessage`,
-            {
-                chat_id: channelId,
-                text: message,
-            }
-        );
+      message += text.trim() + "\n\n";
     }
+
+    if (!message.trim()) return;
+
+    await axios.post(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        chat_id: channelId,
+        text: message.trim(),
+        disable_web_page_preview: true,
+      }
+    );
+  }
 );

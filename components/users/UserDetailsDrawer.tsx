@@ -11,7 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Shield,
   UserX,
   UserCheck,
   Phone,
@@ -39,7 +38,7 @@ export default function UserDetailsDrawer({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<
-    "block" | "unblock" | null
+    "BLOCKED" | "ACTIVE" | null
   >(null);
   const [loading, setLoading] = useState(false);
 
@@ -47,13 +46,13 @@ export default function UserDetailsDrawer({
 
   /* ---------------- Handlers ---------------- */
 
-  function openBlockConfirm() {
-    setPendingAction("block");
+  function openDisableConfirm() {
+    setPendingAction("BLOCKED");
     setConfirmOpen(true);
   }
 
-  function openUnblockConfirm() {
-    setPendingAction("unblock");
+  function openEnableConfirm() {
+    setPendingAction("ACTIVE");
     setConfirmOpen(true);
   }
 
@@ -65,13 +64,13 @@ export default function UserDetailsDrawer({
 
       await setUserStatus(
         user.id,
-        pendingAction === "block" ? "blocked" : "active"
+        pendingAction === "BLOCKED" ? "BLOCKED" : "ACTIVE",
       );
 
       toast.success(
-        pendingAction === "block"
-          ? "User blocked successfully"
-          : "User unblocked successfully"
+        pendingAction === "BLOCKED"
+          ? "User disabled successfully"
+          : "User enabled successfully",
       );
 
       setConfirmOpen(false);
@@ -102,20 +101,13 @@ export default function UserDetailsDrawer({
               </div>
 
               <div className="flex-1">
-                <div className="font-semibold">{user.name}</div>
-                <div className="flex gap-2 pt-1">
+                <div className="font-semibold">{user.phone}</div>
+                <div className="pt-1">
                   <Badge
-                    variant={user.role === "admin" ? "default" : "secondary"}
-                  >
-                    {user.role === "admin" && (
-                      <Shield className="mr-1 h-3 w-3" />
-                    )}
-                    {user.role}
-                  </Badge>
-
-                  <Badge
-                    variant={
-                      user.status === "active" ? "success" : "destructive"
+                    className={
+                      user.status === "ACTIVE"
+                        ? "bg-emerald-500/15 text-emerald-600"
+                        : "bg-red-500/15 text-red-600"
                     }
                   >
                     {user.status}
@@ -134,11 +126,24 @@ export default function UserDetailsDrawer({
               />
             </div>
 
-            {/* Wallet (placeholder) */}
+            {/* Wallet (display only for now) */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <WalletIcon className="h-4 w-4" />
                 Wallet
+              </div>
+
+              <div className="rounded-lg border px-4 py-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Available</span>
+                  <span className="font-medium">
+                    ₹{user.walletBalance.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Locked</span>
+                  <span>₹{user.lockedBalance.toLocaleString()}</span>
+                </div>
               </div>
             </div>
 
@@ -148,32 +153,32 @@ export default function UserDetailsDrawer({
                 Admin Actions
               </div>
 
-              {user.status === "active" ? (
+              {user.status === "ACTIVE" ? (
                 <Button
                   variant="destructive"
                   className="w-full"
-                  onClick={openBlockConfirm}
-                  disabled={loading || user.role === "admin"}
+                  onClick={openDisableConfirm}
+                  disabled={loading}
                 >
                   <UserX className="mr-2 h-4 w-4" />
-                  Block User
+                  Disable User
                 </Button>
               ) : (
                 <Button
                   variant="secondary"
                   className="w-full"
-                  onClick={openUnblockConfirm}
+                  onClick={openEnableConfirm}
                   disabled={loading}
                 >
                   <UserCheck className="mr-2 h-4 w-4" />
-                  Unblock User
+                  Enable User
                 </Button>
               )}
             </div>
 
             {/* Footer */}
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-              Wallet and account actions are fully logged for audit purposes.
+              User status changes are logged for audit purposes.
             </div>
           </div>
         </SheetContent>
@@ -183,14 +188,14 @@ export default function UserDetailsDrawer({
       <ConfirmActionDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={pendingAction === "block" ? "Block user?" : "Unblock user?"}
+        title={pendingAction === "BLOCKED" ? "Block user?" : "Active user?"}
         description={
-          pendingAction === "block"
+          pendingAction === "BLOCKED"
             ? "This user will be prevented from logging in and performing any actions."
-            : "This user will regain access to their account."
+            : "This user will regain full access to their account."
         }
-        confirmText={pendingAction === "block" ? "Block User" : "Unblock User"}
-        confirmVariant={pendingAction === "block" ? "destructive" : "default"}
+        confirmText={pendingAction === "BLOCKED" ? "Block User" : "Active User"}
+        confirmVariant={pendingAction === "BLOCKED" ? "destructive" : "default"}
         onConfirm={handleConfirm}
       />
     </>

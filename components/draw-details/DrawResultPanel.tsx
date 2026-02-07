@@ -41,6 +41,16 @@ type TicketStatsMap = {
 
 type TicketStatsResponse = TicketStatsMap;
 
+type DrawSummary = {
+  totalTickets: number;
+  totalSales: number;
+  totalPayout: number;
+  winnersCount: number;
+  avgTicketValue: number;
+  winRate: number;
+  netResult: number;
+};
+
 /* ---------------- COMPONENT ---------------- */
 
 export default function DrawResultsPanel({ status }: { status: status }) {
@@ -58,6 +68,9 @@ export default function DrawResultsPanel({ status }: { status: status }) {
 
   const lastResultRef = useRef<string | null>(null);
   const [settling, setSettling] = useState(false);
+  const [summary, setSummary] = useState<DrawSummary | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
   /* ---------------- LOAD STATS (CLOUD FUNCTION) ---------------- */
   async function handleDeclareWinners(): Promise<void> {
     const settleDraw = httpsCallable(functions, "settleDrawRun");
@@ -107,11 +120,28 @@ export default function DrawResultsPanel({ status }: { status: status }) {
     }
   };
 
+  const loadDrawSummary = async () => {
+    try {
+      setLoadingSummary(true);
+
+      const getSummary = httpsCallable<{ drawRunId: string }, DrawSummary>(
+        functions,
+        "getDrawSummary",
+      );
+
+      const res = await getSummary({ drawRunId });
+      setSummary(res.data);
+    } catch (err) {
+      console.error("Failed to load draw summary", err);
+      setSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
   /* ---------------- LOAD DRAW ---------------- */
 
   useEffect(() => {
-
-    console.log("status--------", status);
     if (!drawRunId) return;
 
     const ref = doc(db, "drawRuns", drawRunId);
@@ -128,9 +158,9 @@ export default function DrawResultsPanel({ status }: { status: status }) {
       setResult(data.result);
       setConfig(data.configSnapshot);
 
-      console.log("data.configSnapshot", data.configSnapshot);
       // fire & forget
       loadTicketStats(data.result);
+      loadDrawSummary();
     });
 
     return () => unsub();
@@ -187,8 +217,8 @@ export default function DrawResultsPanel({ status }: { status: status }) {
               },
             }}
             config={config}
-            totalSales={377800} // backend later
-            loading={settling}
+            totalSales={summary?.totalSales ?? 0}
+            loading={settling || loadingSummary}
             onDeclare={handleDeclareWinners}
           />
         )}

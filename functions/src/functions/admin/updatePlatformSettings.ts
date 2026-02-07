@@ -1,14 +1,14 @@
 import { onCall } from "firebase-functions/v2/https";
-import { requireAdmin } from "../../helpers/auth";
 import { admin, db } from "../../lib/firebaseAdmin";
 
 import { logAdminActivity } from "../../helpers/logAdminActivity";
 import { sendAdminNotification } from "../../helpers/sendAdminNotification";
+import { requireAdminAuth } from "../../helpers/requireAdminAuth";
 
 export const updatePlatformSettings = onCall(
   { region: "asia-south1" },
   async (request) => {
-    const uid = requireAdmin(request);
+    const adminAuth = requireAdminAuth(request);
     const { data } = request;
 
     if (!data) {
@@ -23,7 +23,7 @@ export const updatePlatformSettings = onCall(
       {
         ...data,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedBy: uid,
+        updatedBy: adminAuth.uid,
       },
       { merge: true }
     );
@@ -33,7 +33,7 @@ export const updatePlatformSettings = onCall(
     await logAdminActivity({
       db,
       payload: {
-        actorId: uid,
+        actorId: adminAuth.uid,
         actorType: "admin",
         action: "UPDATE_PLATFORM_SETTINGS",
         entity: "platformConfig",

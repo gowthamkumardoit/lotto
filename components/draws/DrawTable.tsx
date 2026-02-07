@@ -34,6 +34,7 @@ type Draw = {
   status: UIStatus;
   sales: number;
   result?: DrawResult | null;
+  date: string;
 };
 
 /* ---------------- STATUS BADGE ---------------- */
@@ -56,19 +57,27 @@ function StatusBadge({ status }: { status: UIStatus }) {
     );
   }
 
-
-    if (status === "LOCKED") {
+  if (status === "LOCKED") {
     return (
-      <Badge className="rounded-full bg-red-500/15 text-red-600">
-        LOCKED
-      </Badge>
+      <Badge className="rounded-full bg-red-500/15 text-red-600">LOCKED</Badge>
     );
   }
-
 
   return (
     <Badge className="rounded-full bg-zinc-500/15 text-zinc-500">DRAWN</Badge>
   );
+}
+
+function NewBadge() {
+  return (
+    <Badge className="rounded-full bg-purple-500/15 text-purple-600">NEW</Badge>
+  );
+}
+
+function toDateTime(date: string, time: string): number {
+  // Handles "HH:mm" or "hh:mm AM/PM"
+  const dt = new Date(`${date} ${time}`);
+  return isNaN(dt.getTime()) ? 0 : dt.getTime();
 }
 
 /* ---------------- MAIN TABLE ---------------- */
@@ -85,13 +94,22 @@ export function DrawTable() {
   const [selectedResult, setSelectedResult] = useState<DrawResult | null>(null);
   const [runOpen, setRunOpen] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const todayISO = today.toISOString().slice(0, 10);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowISO = tomorrow.toISOString().slice(0, 10);
+
   const router = useRouter();
 
   /* ---------------- FIRESTORE LISTENER ---------------- */
 
   useEffect(() => {
-    const q = query(collection(db, "drawRuns"), where("date", "==", today));
+    const q = query(
+      collection(db, "drawRuns"),
+      where("date", "in", [todayISO, tomorrowISO]),
+    );
 
     const unsub = onSnapshot(
       q,
@@ -100,7 +118,6 @@ export function DrawTable() {
           const d = doc.data();
 
           let status: UIStatus;
-          console.log("asa", d.status);
           if (d.status === "OPEN") {
             status = "OPEN";
           } else if (d.status === "LOCKED") {
@@ -110,6 +127,7 @@ export function DrawTable() {
           } else {
             status = "DRAWN";
           }
+          const date: string = typeof d.date === "string" ? d.date : todayISO;
 
           return {
             id: doc.id,
@@ -118,13 +136,19 @@ export function DrawTable() {
             sales: d.sales ?? 0,
             status,
             result: d.result ?? null,
+            date,
           };
         });
 
-        setDraws(rows);
+        setDraws(
+          rows.sort(
+            (a, b) => toDateTime(a.date, a.time) - toDateTime(b.date, b.time),
+          ),
+        );
+
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
 
     return () => unsub();
@@ -152,7 +176,7 @@ export function DrawTable() {
       try {
         await httpsCallable(
           functions,
-          "lockDrawRun"
+          "lockDrawRun",
         )({
           drawRunId: selectedDraw.id,
         });
@@ -215,7 +239,10 @@ export function DrawTable() {
               {draws.map((draw) => (
                 <TableRow key={draw.id}>
                   <TableCell className="pl-6 font-medium">
-                    {draw.name}
+                    <div className="flex items-center gap-2">
+                      {draw.name}
+                      {draw.date === tomorrowISO && <NewBadge />}
+                    </div>
                   </TableCell>
 
                   <TableCell>{draw.time}</TableCell>
@@ -316,7 +343,7 @@ export function DrawTable() {
         onRun={async () => {
           const res: any = await httpsCallable(
             functions,
-            "runDraw"
+            "runDraw",
           )({
             drawRunId: selectedDraw!.id,
           });

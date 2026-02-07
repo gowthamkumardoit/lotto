@@ -37,7 +37,7 @@ export function HeatMap4D({ numbers }: HeatMap4DProps) {
 
   const filteredNumbers = useMemo(() => {
     return numbers.filter(
-      (n) => n.tickets >= minTickets && n.amount >= minAmount
+      (n) => n.tickets >= minTickets && n.amount >= minAmount,
     );
   }, [numbers, minTickets, minAmount]);
 
@@ -61,7 +61,6 @@ export function HeatMap4D({ numbers }: HeatMap4DProps) {
       </div>
 
       {/* Filters (future ready) */}
-  
 
       {/* Tabs */}
       <div className="flex gap-2">
@@ -93,12 +92,12 @@ export function HeatMap4D({ numbers }: HeatMap4DProps) {
       </div>
 
       {/* List */}
-      <div className="rounded-lg border border-zinc-800 p-4">
+      <div className="rounded-lg border border-border p-4 bg-card">
         <div className="space-y-2 text-sm">
           {visible.map((n) => (
             <div
               key={n.number}
-              className="flex justify-between rounded-md bg-zinc-900 px-3 py-2"
+              className="flex justify-between rounded-md bg-muted px-3 py-2"
             >
               <span className="font-medium">{n.number}</span>
 

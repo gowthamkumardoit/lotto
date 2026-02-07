@@ -1,20 +1,19 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { requireAdminAuth } from "../../helpers/requireAdminAuth";
-import { db } from "../../lib/firebaseAdmin";
-
+import { admin, db } from "../../lib/firebaseAdmin";
 
 /**
- * lockDrawRun
+ * lockDrawRun (Manual)
  *
- * Locks a draw so:
- * - No more tickets can be sold
+ * Admin-triggered lock:
  * - Draw status: OPEN → LOCKED
- * - All OPEN tickets → LOCKED
+ * - All PENDING tickets → LOCKED
+ * - Audit logged (MANUAL)
  */
 export const lockDrawRun = onCall(
   { region: "asia-south1" },
   async (request) => {
-    requireAdminAuth(request);
+    const adminAuth = requireAdminAuth(request);
 
     const { drawRunId } = request.data as { drawRunId?: string };
 
@@ -26,13 +25,12 @@ export const lockDrawRun = onCall(
     const ticketsQuery = db
       .collection("tickets")
       .where("drawRunId", "==", drawRunId)
-      .where("status", "==", "OPEN");
+      .where("status", "==", "PENDING");
 
     await db.runTransaction(async (tx) => {
-      // ───────── READS FIRST ─────────
+      /* ───────── READS ───────── */
 
       const drawSnap = await tx.get(drawRef);
-
       if (!drawSnap.exists) {
         throw new HttpsError("not-found", "Draw run not found");
       }
@@ -50,19 +48,30 @@ export const lockDrawRun = onCall(
 
       const ticketsSnap = await tx.get(ticketsQuery);
 
-      // ───────── WRITES AFTER ─────────
+      /* ───────── WRITES ───────── */
 
       tx.update(drawRef, {
         status: "LOCKED",
-        lockedAt: new Date(),
+        lockedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       for (const ticketDoc of ticketsSnap.docs) {
         tx.update(ticketDoc.ref, {
           status: "LOCKED",
-          lockedAt: new Date(),
+          lockedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       }
+    });
+
+    /* ───────── AUDIT LOG (AFTER TX) ───────── */
+
+    await db.collection("drawRunAudits").add({
+      drawRunId,
+      action: "DRAW_LOCKED_MANUAL",
+      message: "Draw locked manually by admin",
+      actor: adminAuth.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return {
@@ -71,4 +80,3 @@ export const lockDrawRun = onCall(
     };
   }
 );
-

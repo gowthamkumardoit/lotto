@@ -2,6 +2,8 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { db } from "../../lib/firebaseAdmin";
+import { getWinnerMessage } from "../../helpers/getWinnerMessage";
+import { sendUserNotification } from "../notifications/sendPush";
 
 /* ─────────────────────────────────────────────
    GLOBAL OPTIONS
@@ -23,12 +25,21 @@ type SettledResult = {
   totalWinAmount: number;
 };
 
+
 /* ─────────────────────────────────────────────
    FUNCTION
    ───────────────────────────────────────────── */
 export const settleDrawRun = onCall(
   { region: "asia-south1" },
   async ({ data, auth }) => {
+
+    const winnerNotifications: {
+      uid: string;
+      title: string;
+      body: string;
+      ticketId: string;
+    }[] = [];
+
     if (!auth) {
       throw new HttpsError("unauthenticated", "Authentication required");
     }
@@ -116,6 +127,7 @@ export const settleDrawRun = onCall(
       "4D": { number: drawRun.result["4D"], winners: 0, totalWinAmount: 0 },
     };
 
+
     let totalPayout = 0;
     const BATCH_SIZE = 400;
 
@@ -132,17 +144,69 @@ export const settleDrawRun = onCall(
         const winningNumber = settled[type].number;
 
         if (ticket.number === winningNumber) {
-          const winAmount = ticket.amount * config[`multiplier${type}`];
+          const multiplier = config[`multiplier${type}`];
+          const winAmount = ticket.amount * multiplier;
 
           settled[type].winners += 1;
           settled[type].totalWinAmount += winAmount;
           totalPayout += winAmount;
 
+          // ✅ Update ticket
           batch.update(ticketDoc.ref, {
             status: "WON",
-            winAmount: winAmount, // ✅ CORRECT FIELD
+            winAmount,
           });
-        } else {
+
+          // ✅ CREDIT wallet transaction
+          const walletTxnRef = db.collection("walletTxns").doc();
+          batch.set(walletTxnRef, {
+            userId: ticket.userId,
+            type: "CREDIT",
+            amount: winAmount,
+            reason: `${type} Ticket Win`,
+            referenceId: `${drawRunId}_${ticketDoc.id}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          // ✅ Update user wallet balance
+          const userRef = db.collection("users").doc(ticket.userId);
+          batch.update(userRef, {
+            walletBalance: admin.firestore.FieldValue.increment(winAmount),
+          });
+
+          const { title, body } = getWinnerMessage(
+            type,
+            ticket.number,
+            winAmount
+          );
+
+          winnerNotifications.push({
+            uid: ticket.userId,
+            ticketId: ticketDoc.id,
+            title,
+            body,
+          });
+
+          // ✅ Create winner record
+          const winnerRef = db.collection("winners").doc();
+          batch.set(winnerRef, {
+            drawRunId,
+            drawId: drawRun.drawId,
+
+            ticketId: ticketDoc.id,
+            userId: ticket.userId,
+
+            type,
+            number: ticket.number,
+
+            betAmount: ticket.amount,
+            multiplier,
+            winAmount,
+
+            settledAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        else {
           batch.update(ticketDoc.ref, {
             status: "LOST",
             winAmount: 0,
@@ -153,12 +217,31 @@ export const settleDrawRun = onCall(
       await batch.commit();
     }
 
+
     /* ───────── STEP 6: FINALIZE DRAW RUN ───────── */
     await drawRunRef.update({
       status: "SETTLED",
       settledAt: admin.firestore.FieldValue.serverTimestamp(),
       totalPayout,
       settledResult: settled,
+    });
+
+    /* ───────── STEP 7: SEND WINNER NOTIFICATIONS (NON-BLOCKING) ───────── */
+    for (const notif of winnerNotifications) {
+      sendUserNotification(notif.uid, notif.title, notif.body, {
+        action: "ticket_won",
+        screen: "history",
+        id: notif.ticketId,
+      });
+    }
+
+    /* ───────── AUDIT: SETTLED (FINAL STEP) ───────── */
+    await db.collection("drawRunAudits").add({
+      drawRunId,
+      action: "SETTLED",
+      message: "Draw settled and winners finalized",
+      actor: auth.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return {
