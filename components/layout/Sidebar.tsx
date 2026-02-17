@@ -60,12 +60,19 @@ const navItems: {
     icon: Layers,
     roles: ["ADMIN"],
   },
+
   {
-    label: "Draws",
-    href: "/admin/draws",
+    label: "Digit Draws",
+    href: "/admin/digit-draws",
     icon: Calendar,
     roles: ["ADMIN", "MANAGER"],
   },
+  // {
+  //   label: "Draws",
+  //   href: "/admin/draws",
+  //   icon: Calendar,
+  //   roles: ["ADMIN", "MANAGER"],
+  // },
   {
     label: "Tickets",
     href: "/admin/tickets",

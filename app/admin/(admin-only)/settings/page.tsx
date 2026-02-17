@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -226,6 +226,21 @@ export default function AdminSettingsPage() {
                 setForm((p: any) => ({
                   ...p,
                   general: { ...p.general, maintenanceMode: v },
+                }))
+              }
+            />
+          </SettingRow>
+
+          <SettingRow
+            label="Joined Pool Winners"
+            hint="Select winners only from numbers that have tickets"
+          >
+            <Switch
+              checked={form.general?.joinedPoolWinners}
+              onCheckedChange={(v) =>
+                setForm((p: any) => ({
+                  ...p,
+                  general: { ...p.general, joinedPoolWinners: v },
                 }))
               }
             />

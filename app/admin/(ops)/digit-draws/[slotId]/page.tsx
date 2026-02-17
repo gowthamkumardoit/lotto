@@ -1,0 +1,465 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useEffect, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
+import { format } from "date-fns";
+import { TicketAvailabilityViewer } from "@/components/digit-draws/TicketGridViewer";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/lib/firebase";
+import { toast } from "sonner";
+
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import confetti from "canvas-confetti";
+
+type Slot = {
+  id: string;
+  name: string;
+  digits: number;
+  status: string;
+  sales: number;
+  openAt: any;
+  closeAt: any;
+  configSnapshot: any;
+};
+
+export default function DigitDrawSlotDetailsPage() {
+  const { slotId } = useParams();
+  const [slot, setSlot] = useState<Slot | null>(null);
+  const [now, setNow] = useState(0);
+  const [locking, setLocking] = useState(false);
+
+  const [runOpen, setRunOpen] = useState(false);
+  const [runningDraw, setRunningDraw] = useState(false);
+  const [displayNumber, setDisplayNumber] = useState<string>("--");
+
+  const handleLock = async () => {
+    if (!slot?.id) return;
+
+    try {
+      setLocking(true);
+
+      const lockFn = httpsCallable(functions, "lockDigitDrawSlot");
+
+      await lockFn({ slotId: slot.id });
+
+      toast.success("Slot locked successfully");
+    } catch (error: any) {
+      console.error("Lock failed:", error);
+
+      toast.error(error?.message || "Failed to lock the slot");
+    } finally {
+      setLocking(false);
+    }
+  };
+
+  const handleRunDraw = async () => {
+    if (!slot?.id) return;
+
+    try {
+      setRunningDraw(true);
+
+      const runFn = httpsCallable(functions, "runDigitDrawSlot");
+
+      // Start rolling animation
+      let ticks = 0;
+      const maxTicks = 20;
+
+      const rolling = setInterval(() => {
+        const random = Math.floor(Math.random() * Math.pow(10, slot.digits))
+          .toString()
+          .padStart(slot.digits, "0");
+
+        setDisplayNumber(random);
+        ticks++;
+
+        if (ticks >= maxTicks) {
+          clearInterval(rolling);
+        }
+      }, 80);
+
+      const response: any = await runFn({ slotId: slot.id });
+
+      const winningNumber = response.data?.winningNumber;
+
+      // Delay slightly for dramatic reveal
+      setTimeout(() => {
+        setDisplayNumber(winningNumber);
+
+        confetti({
+          particleCount: 250,
+          spread: 120,
+          origin: { y: 0.6 },
+        });
+
+        toast.success("Draw executed successfully");
+
+        setRunningDraw(false);
+      }, 1500);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to run draw");
+      setRunningDraw(false);
+    }
+  };
+
+  /* ---------------- TIMER ---------------- */
+
+  useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ---------------- LOAD SLOT ---------------- */
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "digitDrawSlots", slotId as string),
+      (snap) => {
+        if (snap.exists()) {
+          setSlot(snap.data() as Slot);
+        }
+      },
+    );
+
+    return () => unsub();
+  }, [slotId]);
+
+  if (!slot) return <div className="p-6">Loading...</div>;
+
+  const openTime = slot.openAt?.toDate?.() || new Date(slot.openAt);
+  const closeTime = slot.closeAt?.toDate?.() || new Date(slot.closeAt);
+
+  const remainingMs = closeTime.getTime() - now;
+  const remainingSeconds = Math.max(Math.floor(remainingMs / 1000), 0);
+
+  const formatCountdown = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}h ${m}m ${s}s`;
+  };
+
+  const statusColor =
+    {
+      OPEN: "bg-green-500",
+      LOCKED: "bg-yellow-500",
+      RUNNING: "bg-blue-500",
+      SETTLED: "bg-purple-500",
+      CANCELLED: "bg-red-500",
+    }[slot.status] || "bg-gray-500";
+
+  const config = slot.configSnapshot || {};
+
+  const totalCombinations = slot.configSnapshot?.stats?.totalCombinations ?? 0;
+
+  const ticketPrice = slot.configSnapshot?.ticketPrice ?? 0;
+
+  const totalRevenueCap = totalCombinations * ticketPrice;
+
+  const salesRatio =
+    totalRevenueCap === 0
+      ? 0
+      : Math.min((slot.sales / totalRevenueCap) * 100, 100);
+
+  const getSalesGradient = (ratio: number) => {
+    if (ratio < 40) {
+      return "from-emerald-500 to-green-400";
+    }
+    if (ratio < 75) {
+      return "from-amber-500 to-yellow-400";
+    }
+    return "from-red-500 to-rose-400";
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* HEADER + ACTIONS */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{slot.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {slot.digits} Digit Draw
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Badge className={`${statusColor} text-white`}>{slot.status}</Badge>
+
+          {/* LOCK BUTTON */}
+          {slot.status === "OPEN" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="secondary">Lock Slot</Button>
+              </AlertDialogTrigger>
+
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Lock this slot?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Once locked, no new tickets can be purchased. This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                  <AlertDialogAction onClick={handleLock} disabled={locking}>
+                    {locking ? "Locking..." : "Confirm Lock"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
+          {/* RUN DRAW BUTTON */}
+          {slot.status === "LOCKED" && (
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setRunOpen(true)}
+            >
+              Run Draw
+            </Button>
+          )}
+
+          {/* CANCEL BUTTON */}
+          {(slot.status === "OPEN" || slot.status === "LOCKED") && (
+            <Button variant="destructive">Cancel Slot</Button>
+          )}
+        </div>
+      </div>
+
+      {/* DRAW CONFIG BANNER */}
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white p-6 shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          {/* LEFT SECTION */}
+          <div>
+            <p className="text-sm opacity-80">Draw Configuration</p>
+            <h2 className="text-2xl font-bold">
+              {slot.digits}D Prize Structure
+            </h2>
+
+            {/* Expected Margin + Max Liability */}
+            <div className="mt-4 flex gap-6 text-sm opacity-90">
+              <div>
+                <span className="opacity-70">Expected Margin</span>
+                <p className="font-semibold">
+                  {slot.configSnapshot?.stats?.expectedMargin.toFixed(2) ?? 0}%
+                </p>
+              </div>
+
+              <div>
+                <span className="opacity-70">Max Liability</span>
+                <p className="font-semibold">
+                  ₹{" "}
+                  {slot.configSnapshot?.stats?.maxLiability?.toLocaleString() ??
+                    0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT GRID */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
+            {/* Ticket Price */}
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs opacity-70">Ticket Price</p>
+              <p className="text-lg font-semibold">
+                ₹ {slot.configSnapshot?.ticketPrice ?? 0}
+              </p>
+            </div>
+
+            {/* 1st Prize (HIGHLIGHTED) */}
+            <div className="bg-yellow-400 text-black rounded-xl p-4 shadow-lg scale-105">
+              <p className="text-xs font-semibold">🥇 1st Prize</p>
+              <p className="text-xl font-bold">
+                ₹ {slot.configSnapshot?.prizes?.exact?.toLocaleString() ?? 0}
+              </p>
+            </div>
+
+            {/* 2nd Prize */}
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs opacity-70">🥈 2nd Prize</p>
+              <p className="text-lg font-semibold">
+                ₹ {slot.configSnapshot?.prizes?.minusOne?.toLocaleString() ?? 0}
+              </p>
+            </div>
+
+            {/* 3rd Prize */}
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs opacity-70">🥉 3rd Prize</p>
+              <p className="text-lg font-semibold">
+                ₹ {slot.configSnapshot?.prizes?.minusTwo?.toLocaleString() ?? 0}
+              </p>
+            </div>
+
+            {/* Total Tickets */}
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs opacity-70">Total Tickets</p>
+              <p className="text-lg font-semibold">
+                {slot.configSnapshot?.stats?.totalCombinations ?? 0}
+              </p>
+            </div>
+
+            {/* TOTAL PRIZE POOL (HIGHLIGHTED) */}
+            {/* TOTAL PRIZE POOL (DERIVED) */}
+            <div className="bg-emerald-400 text-black rounded-xl p-4 shadow-lg scale-105">
+              <p className="text-xs font-semibold">Total Prize Pool</p>
+              <p className="text-xl font-bold">
+                ₹{" "}
+                {(
+                  slot.configSnapshot?.stats?.maxLiability ?? 0
+                ).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TIME WINDOW */}
+      <Card className="border-none shadow-md">
+        <CardContent className="p-6 space-y-6">
+          {/* Title */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Draw Schedule</h2>
+
+            {slot.status === "OPEN" && (
+              <div className="text-sm font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                Live Now
+              </div>
+            )}
+          </div>
+
+          {/* Timeline */}
+          <div className="relative">
+            {/* Vertical Line */}
+            <div className="absolute left-4 top-2 bottom-2 w-[2px] bg-muted" />
+
+            {/* Open Time */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                O
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Opens At</p>
+                <p className="font-medium">{format(openTime, "PPP p")}</p>
+              </div>
+            </div>
+
+            {/* Close Time */}
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">
+                C
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Closes At</p>
+                <p className="font-medium">{format(closeTime, "PPP p")}</p>
+
+                {slot.status === "OPEN" && (
+                  <p className="mt-2 text-lg font-semibold text-red-600">
+                    Closes in: {formatCountdown(remainingSeconds)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SALES SUMMARY */}
+      <Card>
+        <CardContent className="p-6 space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Sales</p>
+              <p className="text-2xl font-semibold">
+                ₹ {slot.sales?.toLocaleString() ?? 0}
+              </p>
+            </div>
+
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Utilization</p>
+              <p className="text-lg font-medium">{salesRatio.toFixed(2)}%</p>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${getSalesGradient(
+                  salesRatio,
+                )} transition-all duration-700`}
+                style={{ width: `${salesRatio}%` }}
+              />
+            </div>
+
+            {/* Sub Labels */}
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>₹ 0</span>
+              <span>₹ {totalRevenueCap.toLocaleString()}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CONFIG SNAPSHOT (HUMAN READABLE) */}
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold">Ticket Availability</h2>
+
+          <TicketAvailabilityViewer slotId={slot.id} digits={slot.digits} />
+        </CardContent>
+      </Card>
+
+      <Dialog open={runOpen} onOpenChange={setRunOpen}>
+        <DialogContent className="max-w-md text-center space-y-6">
+          <DialogHeader>
+            <DialogTitle>Execute Draw</DialogTitle>
+          </DialogHeader>
+
+          {/* Rolling Number */}
+          <div className="text-6xl font-bold tracking-widest py-6">
+            {displayNumber}
+          </div>
+
+          <Button
+            onClick={handleRunDraw}
+            disabled={runningDraw}
+            className="w-full"
+          >
+            {runningDraw ? "Running..." : "Run Now"}
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

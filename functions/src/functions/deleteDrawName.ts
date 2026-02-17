@@ -32,10 +32,10 @@ export const deleteDrawName = onCall(
 
             const draw = snap.data()!;
 
-            if (draw.status !== "UPCOMING") {
+            if (draw.status !== "OPEN") {
                 throw new HttpsError(
                     "failed-precondition",
-                    "Only UPCOMING draws can be deleted"
+                    "Only OPEN draws can be deleted"
                 );
             }
 

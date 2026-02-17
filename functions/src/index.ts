@@ -52,9 +52,25 @@ export { getDrawTicketStats } from "./functions/draw/getDrawTicketStats";
 export { getDrawSummary } from "./functions/draw-details/getDrawSummary";
 export { getMostPlayedNumbers } from "./functions/draw-details/getMostPlayedNumbers";
 
+export { createJackpotDraw } from "./functions/jackpot/createJackpotDraw";
+export { updateJackpotDraw } from "./functions/jackpot/updateJackpotDraw";
+export { deleteJackpotDraw } from "./functions/jackpot/deleteJackpotDraw";
+export { getJackpotSummary } from "./functions/jackpot/getJackpotSummary";
+
+export { createDigitDraw } from "./functions/digitDraw/createDigitDraw";
+export { updateDigitDraw } from "./functions/digitDraw/updateDigitDraw";
+export { updateDigitDrawConfig } from "./functions/digitDraw/updateDigitDrawConfig";
+export { toggleDigitDrawStatus } from "./functions/digitDraw/toggleDigitDrawStatus";
+export { deleteDigitDraw } from "./functions/digitDraw/deleteDigitDraw";
+
+export { createDigitDrawSlot } from "./functions/digitDraw/createDigitDrawSlots";
+
+export { lockDigitDrawSlot } from "./functions/digitDraw/lockDigitDrawSlot";
+export { runDigitDrawSlot } from "./functions/digitDraw/runDigitDrawSlot";
+
 /* ============================================================
  * 3️⃣ USER LIFECYCLE & AUTH
- * ============================================================
+ * ============================================================`
  */
 
 export { handleAuthUserCreate } from "./functions/users/handleAuthUserCreate";
