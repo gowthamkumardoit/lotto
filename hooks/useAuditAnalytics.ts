@@ -2,29 +2,35 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+type ProductType = "kuberX" | "kuberGold";
+
 interface AuditLog {
   action: string;
 }
 
 interface AuditSummary {
-  id: string;      // ✅ stable key
+  id: string;
   action: string;
   count: number;
 }
 
-export function useAuditAnalytics(): AuditSummary[] {
+export function useAuditAnalytics(
+  product: ProductType = "kuberX",
+): AuditSummary[] {
   const [logs, setLogs] = useState<AuditLog[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, "adminActivityLogs"),
-      (snap) => {
-        setLogs(snap.docs.map((d) => d.data() as AuditLog));
-      }
-    );
+    const collectionName =
+      product === "kuberGold"
+        ? "kuberGoldAdminActivityLogs"
+        : "adminActivityLogs";
+
+    const unsub = onSnapshot(collection(db, collectionName), (snap) => {
+      setLogs(snap.docs.map((d) => d.data() as AuditLog));
+    });
 
     return () => unsub();
-  }, []);
+  }, [product]);
 
   return useMemo(() => {
     const map = new Map<string, number>();
@@ -35,9 +41,9 @@ export function useAuditAnalytics(): AuditSummary[] {
     }
 
     return Array.from(map.entries()).map(([action, count]) => ({
-      id: `audit-${action}`, // ✅ deterministic & unique
+      id: `${product}-audit-${action}`, // stable + product-safe
       action,
       count,
     }));
-  }, [logs]);
+  }, [logs, product]);
 }

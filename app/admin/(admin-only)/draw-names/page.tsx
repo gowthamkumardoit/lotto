@@ -29,15 +29,15 @@ export default function DrawNamesPage() {
 
           <div className="flex gap-2">
             <DigitDrawDialog />
-            {/* <DrawNameDialog />
-            <CreateJackpotDialog /> */}
+            <DrawNameDialog />
+            {/* <CreateJackpotDialog /> */}
 
             {/* trigger comes from inside CreateJackpotDialog */}
           </div>
         </div>
         <DigitDrawTable />
-        {/* <DrawNameTable />
-        <JackpotDrawTable /> */}
+         <DrawNameTable />
+      {/*  <JackpotDrawTable /> */} 
       </div>
     </>
   );

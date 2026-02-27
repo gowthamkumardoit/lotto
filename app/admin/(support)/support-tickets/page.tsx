@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-
+import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 /* ---------------- TYPES ---------------- */
 
 type SupportTicket = {
@@ -159,123 +159,131 @@ export default function SupportTicketsPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold">Support Tickets</h1>
-        <p className="text-sm text-muted-foreground">
-          View, respond to, and close user support requests
-        </p>
-      </div>
+    <RefreshWrapper onRefresh={loadTickets}>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-semibold">Support Tickets</h1>
+          <p className="text-sm text-muted-foreground">
+            View, respond to, and close user support requests
+          </p>
+        </div>
 
-      {/* Filters Card */}
-      <div className="bg-card rounded-xl border border-border p-4 flex gap-3">
-        <Input
-          placeholder="Search user / uid / message"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
+        {/* Filters Card */}
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3">
+          <Input
+            placeholder="Search user / uid / message"
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
 
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v);
-            setColumnFilters(v === "ALL" ? [] : [{ id: "status", value: v }]);
-          }}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All</SelectItem>
-            <SelectItem value="OPEN">Open</SelectItem>
-            <SelectItem value="CLOSED">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v);
+              setColumnFilters(v === "ALL" ? [] : [{ id: "status", value: v }]);
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All</SelectItem>
+              <SelectItem value="OPEN">Open</SelectItem>
+              <SelectItem value="CLOSED">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Table Card */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((h) => (
-                  <th key={h.id} className="p-3 text-left font-medium border-b">
-                    {flexRender(h.column.columnDef.header, h.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
+        {/* Table Card */}
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((h) => (
+                    <th
+                      key={h.id}
+                      className="p-3 text-left font-medium border-b"
+                    >
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
 
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className={`border-b border-border hover:bg-muted/50 ${
-                  row.original.status === "OPEN" ? "bg-destructive/5" : ""
-                }`}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-3">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-
-            {table.getRowModel().rows.length === 0 && (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="p-8 text-center text-muted-foreground"
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={`border-b border-border hover:bg-muted/50 ${
+                    row.original.status === "OPEN" ? "bg-destructive/5" : ""
+                  }`}
                 >
-                  No support tickets found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="p-3">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+              {table.getRowModel().rows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="p-8 text-center text-muted-foreground"
+                  >
+                    No support tickets found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Prev
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+        {/* Pagination */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
 
-      {selectedTicket && (
-        <ResponseModal
-          ticket={selectedTicket}
-          onClose={() => {
-            setSelectedTicket(null);
-            loadTickets();
-          }}
-        />
-      )}
-    </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+
+        {selectedTicket && (
+          <ResponseModal
+            ticket={selectedTicket}
+            onClose={() => {
+              setSelectedTicket(null);
+              loadTickets();
+            }}
+          />
+        )}
+      </div>
+    </RefreshWrapper>
   );
 }
 

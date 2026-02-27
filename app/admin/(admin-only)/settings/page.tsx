@@ -63,6 +63,8 @@ export default function AdminSettingsPage() {
                 ta: false,
                 ml: false,
                 hi: false,
+                kn: false,
+                te: false,
               },
             },
           },
@@ -458,6 +460,8 @@ export default function AdminSettingsPage() {
                           ta: false,
                           ml: false,
                           hi: false,
+                          kn: false,
+                          te: false,
                         }),
                         ta: v,
                       },
@@ -485,6 +489,8 @@ export default function AdminSettingsPage() {
                           ta: false,
                           ml: false,
                           hi: false,
+                          kn: false,
+                          te: false,
                         }),
                         ml: v,
                       },
@@ -512,8 +518,68 @@ export default function AdminSettingsPage() {
                           ta: false,
                           ml: false,
                           hi: false,
+                          kn: false,
+                          te: false,
                         }),
                         hi: v,
+                      },
+                    },
+                  },
+                }))
+              }
+            />
+
+            {/* Kannada */}
+            <LanguageToggle
+              label="Kannada"
+              flag="🇮🇳"
+              checked={form.notifications?.telegram?.languages?.kn}
+              onChange={(v: boolean) =>
+                setForm((p: any) => ({
+                  ...p,
+                  notifications: {
+                    ...p.notifications,
+                    telegram: {
+                      ...(p.notifications.telegram ?? {}),
+                      languages: {
+                        ...(p.notifications.telegram?.languages ?? {
+                          en: true,
+                          ta: false,
+                          ml: false,
+                          hi: false,
+                          kn: false,
+                          te: false,
+                        }),
+                        kn: v,
+                      },
+                    },
+                  },
+                }))
+              }
+            />
+
+            {/* Telugu */}
+            <LanguageToggle
+              label="Telugu"
+              flag="🇮🇳"
+              checked={form.notifications?.telegram?.languages?.te}
+              onChange={(v: boolean) =>
+                setForm((p: any) => ({
+                  ...p,
+                  notifications: {
+                    ...p.notifications,
+                    telegram: {
+                      ...(p.notifications.telegram ?? {}),
+                      languages: {
+                        ...(p.notifications.telegram?.languages ?? {
+                          en: true,
+                          ta: false,
+                          ml: false,
+                          hi: false,
+                          kn: false,
+                          te: false,
+                        }),
+                        te: v,
                       },
                     },
                   },

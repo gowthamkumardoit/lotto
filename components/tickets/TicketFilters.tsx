@@ -51,24 +51,25 @@ export function TicketFilterSidebar({
   return (
     <aside
       className="
-        w-72 shrink-0 sticky top-20
-        max-h-[calc(100vh-6rem)]
-        overflow-y-auto
-        rounded-2xl
-        bg-white
-        border border-neutral-200
-        shadow-[0_10px_30px_rgba(0,0,0,0.08)]
-        p-5 space-y-6
-      "
+    w-72 shrink-0 sticky top-20
+    max-h-[calc(100vh-6rem)]
+    overflow-y-auto
+    rounded-2xl
+    bg-card
+    border border-border
+    shadow-sm
+    p-5 space-y-6
+  "
     >
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-neutral-800">Filters</h3>
+        <h3 className="text-sm font-semibold text-foreground">Filters</h3>
+
         <Button
           variant="ghost"
           size="sm"
           onClick={resetFilters}
-          className="text-neutral-500 hover:text-indigo-600"
+          className="text-muted-foreground hover:text-primary"
         >
           <X className="h-4 w-4 mr-1" />
           Reset
@@ -104,7 +105,7 @@ export function TicketFilterSidebar({
             checked={types.includes(t)}
             onChange={(checked) =>
               setTypes((prev) =>
-                checked ? [...prev, t] : prev.filter((x) => x !== t)
+                checked ? [...prev, t] : prev.filter((x) => x !== t),
               )
             }
           />
@@ -113,14 +114,14 @@ export function TicketFilterSidebar({
 
       {/* STATUS */}
       <Section title="Status">
-        {(["PENDING","LOCKED", "WON", "LOST"] as TicketStatus[]).map((s) => (
+        {(["PENDING", "LOCKED", "WON", "LOST", "BOOKED"] as TicketStatus[]).map((s) => (
           <CheckboxRow
             key={s}
             label={s.charAt(0) + s.slice(1).toLowerCase()}
             checked={statuses.includes(s)}
             onChange={(checked) =>
               setStatuses((prev) =>
-                checked ? [...prev, s] : prev.filter((x) => x !== s)
+                checked ? [...prev, s] : prev.filter((x) => x !== s),
               )
             }
           />
@@ -145,8 +146,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-200 p-4 space-y-3">
-      <div className="text-xs font-medium text-neutral-600">{title}</div>
+    <div className="rounded-xl border border-border bg-background p-4 space-y-3">
+      <div className="text-xs font-medium text-muted-foreground">{title}</div>
       {children}
     </div>
   );
@@ -167,7 +168,7 @@ function CheckboxRow({
         checked={checked}
         onCheckedChange={(v) => onChange(Boolean(v))}
       />
-      <span className="text-sm text-neutral-700">{label}</span>
+      <span className="text-sm text-foreground">{label}</span>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
       <div className="hidden lg:block w-1/2 relative">
         <img
           src="/images/lucky_raja.png"
-          alt="Lucky Raja"
+          alt="Kuber Lottery"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-black/20" />
@@ -44,13 +44,13 @@ export default function AdminLoginPage() {
           {/* BRAND */}
           <div className="text-center space-y-4">
             <img
-              src="/images/app_icon.png"
-              alt="Lucky Raja"
+              src="/images/kuber_lottery.png"
+              alt="Kuber Lottery"
               className="mx-auto h-16 w-auto drop-shadow-md"
             />
 
             <h1 className="text-4xl font-extrabold tracking-tight">
-              Lucky Raja Admin
+              Kuber Lottery Admin
             </h1>
 
             <div className="mx-auto h-1 w-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
@@ -96,7 +96,7 @@ export default function AdminLoginPage() {
 
           {/* FOOTER */}
           <p className="text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Lucky Raja • Internal Use Only
+            © {new Date().getFullYear()} Kuber Lottery • Internal Use Only
           </p>
         </div>
       </div>

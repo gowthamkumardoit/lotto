@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { DigitDrawRowActions } from "./DigitDrawRowActions";
-import { DrawsEmptyState } from "../draws/DrawEmptyState";
+import { DrawsEmptyStateKuberGold } from "../draws/DrawsEmptyStateKuberGold";
 
 /* ---------------- TYPES ---------------- */
 
@@ -69,20 +69,20 @@ export function DigitDrawTable() {
   if (loading) {
     return (
       <div className="border rounded-xl p-10 text-center text-sm text-muted-foreground">
-        Loading digit draws…
+        Loading Kuber Gold draws…
       </div>
     );
   }
 
   if (!draws.length) {
-    return <DrawsEmptyState />;
+    return <DrawsEmptyStateKuberGold />;
   }
 
   return (
     <div className="rounded-xl border bg-background shadow-sm">
       {/* Header */}
       <div className="border-b px-5 py-4">
-        <h3 className="text-lg font-semibold">Digit Draws</h3>
+        <h3 className="text-lg font-semibold">Kuber Gold Draws</h3>
         <p className="text-sm text-muted-foreground">
           Manage digit-based lottery draws
         </p>

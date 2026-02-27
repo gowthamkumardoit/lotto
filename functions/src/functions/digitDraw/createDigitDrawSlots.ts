@@ -108,20 +108,6 @@ export const createDigitDrawSlot = onCall(
 
             const digits = template.digits;
 
-            /** 🚫 Prevent overlapping ACTIVE slots for same digit type */
-            const overlapping = await db
-                .collection("digitDrawSlots")
-                .where("digits", "==", digits)
-                .where("status", "in", ["OPEN", "LOCKED", "RUNNING"])
-                .limit(1)
-                .get();
-
-            if (!overlapping.empty) {
-                throw new Error(
-                    `Another active slot already exists for ${digits}D`
-                );
-            }
-
             /** 📦 Snapshot template config */
             const configSnapshot = template.config;
 

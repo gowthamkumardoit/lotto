@@ -117,7 +117,7 @@ export function DigitDrawDialog({
     setError("");
 
     const toastId = toast.loading(
-      isEdit ? "Updating digit draw..." : "Creating digit draw...",
+      isEdit ? "Updating Kuber Gold Draw..." : "Creating Kuber Gold Draw...",
     );
 
     try {
@@ -140,8 +140,8 @@ export function DigitDrawDialog({
 
       toast.success(
         isEdit
-          ? "Digit draw updated successfully"
-          : "Digit draw created successfully",
+          ? "Kuber Gold updated successfully"
+          : "Kuber Gold created successfully",
         { id: toastId },
       );
 
@@ -173,14 +173,14 @@ export function DigitDrawDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children ?? (
-          <Button>{isEdit ? "Edit Digit Draw" : "+ Add Digit Draw"}</Button>
+          <Button>{isEdit ? "Edit Kuber Gold" : "+ Add Kuber Gold"}</Button>
         )}
       </DialogTrigger>
 
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit Digit Draw" : "Create Digit Draw"}
+            {isEdit ? "Edit Kuber Gold" : "Create Kuber Gold"}
           </DialogTitle>
         </DialogHeader>
 
@@ -215,7 +215,7 @@ export function DigitDrawDialog({
             disabled={loading || isUnchanged}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "Save Changes" : "Create Digit Draw"}
+            {isEdit ? "Save Changes" : "Create Kuber Gold"}
           </Button>
         </div>
       </DialogContent>

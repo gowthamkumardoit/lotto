@@ -28,7 +28,7 @@ export type Ticket = {
   ticketNumber: string;
   type: "2D" | "3D" | "4D";
   amount: number;
-  status: "LOCKED" | "WON" | "LOST" | "OPEN";
+  status: "LOCKED" | "WON" | "LOST" | "OPEN" | "BOOKED";
   createdAt: string;
 };
 
@@ -39,6 +39,17 @@ type Props = {
 };
 
 export function TicketsTable({ data, loading = false, onRowClick }: Props) {
+  const statusVariants = cva("rounded-full px-2 py-0.5 text-xs font-medium", {
+    variants: {
+      status: {
+        WON: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        LOST: "bg-destructive/10 text-destructive",
+        LOCKED: "bg-muted text-muted-foreground",
+        OPEN: "bg-primary/10 text-primary",
+        BOOKED: "bg-primary/10 text-primary",
+      },
+    },
+  });
   const columns = useMemo<ColumnDef<Ticket>[]>(
     () => [
       {
@@ -63,15 +74,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
         cell: ({ row }) => {
           const s = row.original.status;
 
-          return (
-            <Badge
-              variant={
-                s === "WON" ? "success" : s === "LOST" ? "danger" : "warning"
-              }
-            >
-              {s}
-            </Badge>
-          );
+          return <Badge className={statusVariants({ status: s })}>{s}</Badge>;
         },
       },
       {
@@ -79,7 +82,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
         header: "Date",
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -97,7 +100,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border p-6 text-center text-neutral-400">
+      <div className="rounded-xl border p-6 text-center text-muted-foreground">
         Loading tickets…
       </div>
     );
@@ -105,14 +108,14 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
 
   if (!data.length) {
     return (
-      <div className="rounded-xl border p-6 text-center text-neutral-400">
+      <div className="rounded-xl border p-6 text-center text-muted-foreground">
         No tickets found
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white">
+    <div className="rounded-xl border bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
@@ -128,7 +131,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
                     <div className="flex items-center gap-1">
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                       {sorted === "asc" && <ChevronUp size={14} />}
                       {sorted === "desc" && <ChevronDown size={14} />}
@@ -144,7 +147,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className="hover:bg-neutral-50 cursor-pointer"
+              className="hover:bg-muted cursor-pointer"
               onClick={() => onRowClick?.(row.original)}
             >
               {row.getVisibleCells().map((cell) => (
@@ -160,7 +163,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
       {/* PAGINATION */}
       <div className="flex items-center justify-between p-3 border-t">
         {/* LEFT: PAGE SIZE */}
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Show</span>
           <select
             value={table.getState().pagination.pageSize}
@@ -178,7 +181,7 @@ export function TicketsTable({ data, loading = false, onRowClick }: Props) {
 
         {/* RIGHT: PAGE CONTROLS */}
         <div className="flex items-center gap-3">
-          <span className="text-sm text-neutral-500">
+          <span className="text-sm text-muted-foreground">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </span>

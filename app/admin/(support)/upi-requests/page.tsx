@@ -32,6 +32,7 @@ import {
   rejectUpiWithdrawFn,
 } from "@/services/upiWithdrawService";
 import { toast } from "sonner";
+import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 
 export default function UpiWithdrawRequestsPage() {
   const { data, loading, refetch } = useUpiWithdrawRequests();
@@ -159,79 +160,81 @@ export default function UpiWithdrawRequestsPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">UPI Withdraw Requests</h1>
+    <RefreshWrapper onRefresh={refetch}>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold">UPI Withdraw Requests</h1>
 
-      <Input
-        className="w-80"
-        placeholder="Search by user / UPI"
-        value={globalFilter}
-        onChange={(e) => setGlobalFilter(e.target.value)}
-      />
+        <Input
+          className="w-80"
+          placeholder="Search by user / UPI"
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+        />
 
-      <div className="border rounded-xl">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
-                    {flexRender(h.column.columnDef.header, h.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center">
-                  Loading…
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading &&
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+        <div className="border rounded-xl">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id}>
+                  {hg.headers.map((h) => (
+                    <TableHead key={h.id}>
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
               ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center">
+                    Loading…
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!loading &&
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <ConfirmActionDialog
+          open={rejectOpen}
+          onOpenChange={setRejectOpen}
+          title="Reject UPI Withdrawal"
+          description="Are you sure you want to reject this withdrawal request?"
+          confirmText="Reject Withdrawal"
+          confirmVariant="destructive"
+          onConfirm={async () => {
+            if (!selectedId) return;
+
+            try {
+              setActionId(selectedId);
+              await rejectUpiWithdrawFn(selectedId);
+              toast.success("UPI withdrawal rejected");
+            } catch {
+              toast.error("Failed to reject request");
+            } finally {
+              setRejectOpen(false);
+              setSelectedId(null);
+              setActionId(null);
+            }
+          }}
+        />
       </div>
-
-      <ConfirmActionDialog
-        open={rejectOpen}
-        onOpenChange={setRejectOpen}
-        title="Reject UPI Withdrawal"
-        description="Are you sure you want to reject this withdrawal request?"
-        confirmText="Reject Withdrawal"
-        confirmVariant="destructive"
-        onConfirm={async () => {
-          if (!selectedId) return;
-
-          try {
-            setActionId(selectedId);
-            await rejectUpiWithdrawFn(selectedId);
-            toast.success("UPI withdrawal rejected");
-          } catch {
-            toast.error("Failed to reject request");
-          } finally {
-            setRejectOpen(false);
-            setSelectedId(null);
-            setActionId(null);
-          }
-        }}
-      />
-    </div>
+    </RefreshWrapper>
   );
 }

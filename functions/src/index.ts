@@ -36,6 +36,9 @@ export { updatePayoutSettings } from "./functions/admin/updatePayoutSettings";
 export { uploadUpiQrFn } from "./functions/admin/uploadUpiQrFn";
 export { getAdminPendingCounts } from "./functions/admin/getAdminPendingCounts";
 export { getPlatformConfig } from "./functions/admin/getPlatformConfig";
+export { grantSignupBonus } from "./functions/admin/grantSignupBonus";
+export { updateKuberGoldCloseTime } from "./functions/admin/updateKuberGoldCloseTime";
+export { expireUserBonuses } from "./functions/admin/expireUserBonuses";
 
 /* ============================================================
  * 2️⃣ DRAW / LOTTERY ENGINE
@@ -67,6 +70,8 @@ export { createDigitDrawSlot } from "./functions/digitDraw/createDigitDrawSlots"
 
 export { lockDigitDrawSlot } from "./functions/digitDraw/lockDigitDrawSlot";
 export { runDigitDrawSlot } from "./functions/digitDraw/runDigitDrawSlot";
+export { previewDigitDrawWinners } from "./functions/digitDraw/previewDigitDrawWinners";
+export { declareDigitDrawWinners } from "./functions/digitDraw/declareDigitDrawWinners";
 
 /* ============================================================
  * 3️⃣ USER LIFECYCLE & AUTH
@@ -87,6 +92,11 @@ export { rejectTopup } from "./functions/topups/rejectTopup";
 export { submitWithdraw } from "./functions/withdraw/submitWithdraw";
 export { approveWithdraw } from "./functions/withdraw/approveWithdraw";
 export { rejectWithdraw } from "./functions/withdraw/rejectWithdraw";
+export { saveBankAccount } from "./functions/users/saveBankAccount";
+export { approveBankAccount } from "./functions/users/approveBankAccount";
+export { deleteBankAccount } from "./functions/users/deleteBankAccount";
+export { rejectBankAccount } from "./functions/users/rejectBankAccount";
+export { setPrimaryBankAccount } from "./functions/users/setPrimaryBankAccount";
 
 /* ============================================================
  * 5️⃣ TICKETS / PURCHASE FLOW
@@ -96,6 +106,9 @@ export { rejectWithdraw } from "./functions/withdraw/rejectWithdraw";
 export { purchase2DTicket } from "./functions/tickets/purchase2DTicket";
 export { purchase3DTicket } from "./functions/tickets/purchase3DTicket";
 export { purchase4DTicket } from "./functions/tickets/purchase4DTicket";
+export { purchaseKuberGoldTicket } from "./functions/tickets/purchaseKuberGoldTicket";
+export { holdKuberGoldNumbers } from "./functions/tickets/holdKuberGoldNumbers";
+export { releaseExpiredHolds } from "./functions/tickets/releaseExpiredHolds";
 
 /* ============================================================
  * 6️⃣ KYC & COMPLIANCE
@@ -130,6 +143,7 @@ export { sendSupportMessage } from "./functions/telegram/sendSupportMessage";
 export { telegramChatWebhook } from "./functions/telegram/telegramChatWebhook";
 export { postToTelegramChannel } from "./functions/telegram/telegramChannel";
 export { onDrawStatusChanged } from "./functions/telegram/onDrawStatusChanged";
+export { onKuberGoldStatusChanged } from "./functions/telegram/onKuberGoldStatusChanged";
 
 /* ============================================================
  * 🔟 STATS / AGGREGATIONS (Firestore Triggers)
@@ -141,6 +155,7 @@ export { onSupportTicketChanged } from "./functions/stats/onSupportTicketChanged
 export { onTopupChanged } from "./functions/stats/onTopupChanged";
 export { onUpiRequests } from "./functions/stats/onUpiRequests";
 export { onWithdrawalChanged } from "./functions/stats/onWithdrawalChanged";
+export { onBankAccountRequests } from "./functions/stats/onBankAccountRequests";
 
 /* ============================================================
  * 1️⃣1️⃣ CRON JOBS / SCHEDULED TASKS

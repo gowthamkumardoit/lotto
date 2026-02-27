@@ -6,8 +6,8 @@ import { admin, db } from "../../lib/firebaseAdmin";
  * lockDigitDrawSlot (Manual)
  *
  * Admin-triggered lock:
- * - Slot status: OPEN → LOCKED
- * - All OPEN tickets → LOCKED
+ * - Slot status: BOOKED → LOCKED
+ * - All BOOKED tickets → LOCKED
  * - Audit logged (MANUAL)
  */
 export const lockDigitDrawSlot = onCall(
@@ -24,9 +24,9 @@ export const lockDigitDrawSlot = onCall(
     const slotRef = db.collection("digitDrawSlots").doc(slotId);
 
     const ticketsQuery = db
-      .collection("digitDrawTickets")
+      .collection("kuberGoldTickets")
       .where("slotId", "==", slotId)
-      .where("status", "==", "OPEN");
+      .where("status", "==", "BOOKED");
 
     await db.runTransaction(async (tx) => {
 
@@ -49,7 +49,7 @@ export const lockDigitDrawSlot = onCall(
         );
       }
 
-      /* ───────── READ OPEN TICKETS ───────── */
+      /* ───────── READ BOOKED TICKETS ───────── */
 
       const ticketsSnap = await tx.get(ticketsQuery);
 

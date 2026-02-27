@@ -30,6 +30,7 @@ import DepositReviewDrawer from "@/components/deposits/DepositReviewDrawer";
 import { DepositRequestWithWallet } from "@/types/deposit";
 import { getDepositWithWallet } from "@/services/depositService";
 import type { FilterFn } from "@tanstack/react-table";
+import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 
 import { toast } from "sonner";
 /* ---------------- Helpers ---------------- */
@@ -45,9 +46,9 @@ export default function DepositRequestsPage() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedDeposit, setSelectedDeposit] =
     useState<DepositRequestWithWallet | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [openReview, setOpenReview] = useState(false);
-
-  const { data: topups, loading } = useTopupRequests();
+  const { data: topups, loading } = useTopupRequests(refreshKey);
 
   const userIds = useMemo(
     () => Array.from(new Set(topups.map((t) => t.userId))),
@@ -58,6 +59,10 @@ export default function DepositRequestsPage() {
 
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+
+  const handleRefresh = async () => {
+    setRefreshKey((prev) => prev + 1);
+  };
 
   /* ---------------- Columns (need usersById) ---------------- */
 
@@ -183,158 +188,163 @@ export default function DepositRequestsPage() {
     getPaginationRowModel: getPaginationRowModel(),
   });
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Deposit Requests</h1>
-        <p className="text-sm text-muted-foreground">
-          Wallet top-up requests from users
-        </p>
-      </div>
+    <RefreshWrapper onRefresh={handleRefresh}>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Deposit Requests</h1>
+          <p className="text-sm text-muted-foreground">
+            Wallet top-up requests from users
+          </p>
+        </div>
 
-      {/* Search */}
+        {/* Search */}
 
-      <div className="flex flex-wrap gap-4 items-end">
-        <Input
-          type="search"
-          placeholder="Search by UTR / User / Mobile"
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="w-80"
-        />
+        <div className="flex flex-wrap gap-4 items-end">
+          <Input
+            type="search"
+            placeholder="Search by UTR / User / Mobile"
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="w-80"
+          />
 
-        <div className="flex gap-2">
-          <div>
-            <label className="text-xs text-muted-foreground">From</label>
-            <Input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </div>
+          <div className="flex gap-2">
+            <div>
+              <label className="text-xs text-muted-foreground">From</label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
 
-          <div>
-            <label className="text-xs text-muted-foreground">To</label>
-            <Input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
+            <div>
+              <label className="text-xs text-muted-foreground">To</label>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-background">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
-                    {flexRender(h.column.columnDef.header, h.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+        {/* Table */}
+        <div className="rounded-xl border bg-background">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id}>
+                  {hg.headers.map((h) => (
+                    <TableHead key={h.id}>
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
 
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
-                  Loading…
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading && table.getRowModel().rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
-                  No deposit requests found
-                </TableCell>
-              </TableRow>
-            )}
-
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={async () => {
-                  try {
-                    const fullDeposit = await getDepositWithWallet(
-                      row.original.id,
-                    );
-                    setSelectedDeposit(fullDeposit);
-                    setOpenReview(true);
-                  } catch (err) {
-                    console.error(err);
-                    toast.error("Failed to load deposit details");
-                  }
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10">
+                    Loading…
                   </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t">
-          {/* Page info */}
-          <div className="text-sm text-muted-foreground">
-            Page{" "}
-            <span className="font-medium">
-              {table.getState().pagination.pageIndex + 1}
-            </span>{" "}
-            of <span className="font-medium">{table.getPageCount()}</span>
-          </div>
+                </TableRow>
+              )}
 
-          {/* Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
-              onClick={() => table.firstPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              ⏮ First
-            </button>
+              {!loading && table.getRowModel().rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10">
+                    No deposit requests found
+                  </TableCell>
+                </TableRow>
+              )}
 
-            <button
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              ◀ Prev
-            </button>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={async () => {
+                    try {
+                      const fullDeposit = await getDepositWithWallet(
+                        row.original.id,
+                      );
+                      setSelectedDeposit(fullDeposit);
+                      setOpenReview(true);
+                    } catch (err) {
+                      console.error(err);
+                      toast.error("Failed to load deposit details");
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            {/* Page info */}
+            <div className="text-sm text-muted-foreground">
+              Page{" "}
+              <span className="font-medium">
+                {table.getState().pagination.pageIndex + 1}
+              </span>{" "}
+              of <span className="font-medium">{table.getPageCount()}</span>
+            </div>
 
-            <button
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next ▶
-            </button>
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
+                onClick={() => table.firstPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                ⏮ First
+              </button>
 
-            <button
-              className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
-              onClick={() => table.lastPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Last ⏭
-            </button>
+              <button
+                className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                ◀ Prev
+              </button>
+
+              <button
+                className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next ▶
+              </button>
+
+              <button
+                className="px-3 py-1 text-sm border rounded-md disabled:opacity-50"
+                onClick={() => table.lastPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Last ⏭
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Drawer */}
-      <DepositReviewDrawer
-        open={openReview}
-        deposit={selectedDeposit}
-        onClose={() => setOpenReview(false)}
-      />
-    </div>
+        {/* Drawer */}
+        <DepositReviewDrawer
+          open={openReview}
+          deposit={selectedDeposit}
+          onClose={() => setOpenReview(false)}
+        />
+      </div>
+    </RefreshWrapper>
   );
 }

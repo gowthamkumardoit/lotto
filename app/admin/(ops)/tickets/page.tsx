@@ -32,12 +32,34 @@ export default function TicketsPage() {
   /* ---------------- FIREBASE ---------------- */
 
   useEffect(() => {
-    const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
+    setLoading(true);
 
-    const unsub = onSnapshot(q, (snap) => {
-      const rows: Ticket[] = snap.docs.map((doc) => {
+    const ticketsQuery = query(
+      collection(db, "tickets"),
+      orderBy("createdAt", "desc"),
+    );
+
+    const goldQuery = query(
+      collection(db, "kuberGoldTickets"),
+      orderBy("createdAt", "desc"),
+    );
+
+    let normalTickets: Ticket[] = [];
+    let goldTickets: Ticket[] = [];
+
+    const mergeAndSet = () => {
+      const combined = [...normalTickets, ...goldTickets].sort(
+        (a, b) =>
+          (b.createdAtRaw?.getTime() ?? 0) - (a.createdAtRaw?.getTime() ?? 0),
+      );
+
+      setTickets(combined);
+      setLoading(false);
+    };
+
+    const unsub1 = onSnapshot(ticketsQuery, (snap) => {
+      normalTickets = snap.docs.map((doc) => {
         const d = doc.data();
-
         const createdAtDate = d.createdAt?.toDate();
 
         return {
@@ -46,16 +68,39 @@ export default function TicketsPage() {
           type: d.type,
           amount: d.amount,
           status: d.status,
+          source: "KUBER_X", // 🔥 tag source
           createdAt: createdAtDate ? format(createdAtDate, "dd MMM yyyy") : "",
           createdAtRaw: createdAtDate,
         };
       });
 
-      setTickets(rows);
-      setLoading(false);
+      mergeAndSet();
     });
 
-    return () => unsub();
+    const unsub2 = onSnapshot(goldQuery, (snap) => {
+      goldTickets = snap.docs.map((doc) => {
+        const d = doc.data();
+        const createdAtDate = d.createdAt?.toDate();
+
+        return {
+          id: doc.id,
+          ticketNumber: d.number,
+          type: d.type,
+          amount: d.amount,
+          status: d.status,
+          source: "KUBER_GOLD", // 🔥 tag source
+          createdAt: createdAtDate ? format(createdAtDate, "dd MMM yyyy") : "",
+          createdAtRaw: createdAtDate,
+        };
+      });
+
+      mergeAndSet();
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   /* ---------------- FILTERING ---------------- */
@@ -100,16 +145,16 @@ export default function TicketsPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl flex gap-6">
         {/* FILTERS */}
         <TicketFilterSidebar onChange={setFilters} />
 
         {/* CONTENT */}
         <main className="flex-1 space-y-4">
-          <div className="rounded-2xl bg-white border border-neutral-200 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-neutral-800">Tickets</h2>
-            <p className="text-sm text-neutral-500">
+          <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground">Tickets</h2>
+            <p className="text-sm text-muted-foreground">
               All tickets placed by users
             </p>
           </div>

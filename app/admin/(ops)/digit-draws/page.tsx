@@ -24,15 +24,11 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CreateDigitDrawSlotDialog } from "@/components/digit-draws/CreateDigitDrawSlotDialog";
+import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 
 /* ---------------- TYPES ---------------- */
 
-type SlotStatus =
-  | "OPEN"
-  | "LOCKED"
-  | "RUNNING"
-  | "COMPLETED"
-  | "DISABLED";
+type SlotStatus = "OPEN" | "LOCKED" | "RUNNING" | "COMPLETED" | "DISABLED";
 
 type DigitDrawSlot = {
   id: string;
@@ -69,7 +65,7 @@ export default function DigitDrawSlotsPage() {
   useEffect(() => {
     const q = query(
       collection(db, "digitDrawSlots"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
 
     const unsub = onSnapshot(q, (snap) => {
@@ -86,124 +82,133 @@ export default function DigitDrawSlotsPage() {
   }, []);
 
   /* ---------------- RENDER ---------------- */
-
   return (
-    <div className="p-6 space-y-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            Digit Draw Slots
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage active 2D / 3D / 4D draw instances
-          </p>
+    <RefreshWrapper
+      onRefresh={async () => {
+        setLoading(true);
+
+        const q = query(
+          collection(db, "digitDrawSlots"),
+          orderBy("createdAt", "desc"),
+        );
+
+        const snap = await new Promise<any>((resolve) => {
+          const unsub = onSnapshot(q, (s) => {
+            resolve(s);
+            unsub();
+          });
+        });
+
+        const data = snap.docs.map((doc: any) => ({
+          id: doc.id,
+          ...(doc.data() as any),
+        }));
+
+        setSlots(data);
+        setLoading(false);
+      }}
+    >
+      <div className="p-6 space-y-6">
+        {/* HEADER */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold">Digit Draw Slots</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage active 2D / 3D / 4D draw instances
+            </p>
+          </div>
+
+          <CreateDigitDrawSlotDialog>
+            <Button>+ Create Slot</Button>
+          </CreateDigitDrawSlotDialog>
         </div>
 
-        <CreateDigitDrawSlotDialog>
-          <Button>+ Create Slot</Button>
-        </CreateDigitDrawSlotDialog>
-      </div>
+        {/* TABLE */}
+        <div className="rounded-xl border bg-background shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead className="pl-6">Slot Name</TableHead>
+                <TableHead>Digits</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Sales</TableHead>
+                <TableHead>Open At</TableHead>
+                <TableHead>Close At</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="pr-6 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
-      {/* TABLE */}
-      <div className="rounded-xl border bg-background shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/40">
-              <TableHead className="pl-6">Slot Name</TableHead>
-              <TableHead>Digits</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Sales</TableHead>
-              <TableHead>Open At</TableHead>
-              <TableHead>Close At</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="pr-6 text-right">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    Loading slots...
+                  </TableCell>
+                </TableRow>
+              )}
 
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-8"
+              {!loading && slots.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    No slots created yet.
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {slots.map((slot) => (
+                <TableRow
+                  key={slot.id}
+                  className="hover:bg-muted/50 transition-colors"
                 >
-                  Loading slots...
-                </TableCell>
-              </TableRow>
-            )}
+                  <TableCell className="pl-6 font-medium">
+                    {slot.name}
+                  </TableCell>
 
-            {!loading && slots.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-8"
-                >
-                  No slots created yet.
-                </TableCell>
-              </TableRow>
-            )}
+                  <TableCell>{slot.digits}D</TableCell>
 
-            {slots.map((slot) => (
-              <TableRow
-                key={slot.id}
-                className="hover:bg-muted/50 transition-colors"
-              >
-                <TableCell className="pl-6 font-medium">
-                  {slot.name}
-                </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={cn(
+                        "rounded-full px-3 py-1",
+                        statusStyles[slot.status],
+                      )}
+                    >
+                      {slot.status}
+                    </Badge>
+                  </TableCell>
 
-                <TableCell>{slot.digits}D</TableCell>
+                  <TableCell>₹{slot.sales?.toLocaleString() ?? 0}</TableCell>
 
-                <TableCell>
-                  <Badge
-                    className={cn(
-                      "rounded-full px-3 py-1",
-                      statusStyles[slot.status]
-                    )}
-                  >
-                    {slot.status}
-                  </Badge>
-                </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {slot.openAt?.toDate().toLocaleString()}
+                  </TableCell>
 
-                <TableCell>
-                  ₹{slot.sales?.toLocaleString() ?? 0}
-                </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {slot.closeAt?.toDate().toLocaleString()}
+                  </TableCell>
 
-                <TableCell className="text-sm text-muted-foreground">
-                  {slot.openAt?.toDate().toLocaleString()}
-                </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {slot.createdAt?.toDate().toLocaleDateString()}
+                  </TableCell>
 
-                <TableCell className="text-sm text-muted-foreground">
-                  {slot.closeAt?.toDate().toLocaleString()}
-                </TableCell>
-
-                <TableCell className="text-sm text-muted-foreground">
-                  {slot.createdAt
-                    ?.toDate()
-                    .toLocaleDateString()}
-                </TableCell>
-
-                <TableCell className="pr-6 text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      router.push(
-                        `/admin/digit-draws/${slot.id}`
-                      )
-                    }
-                  >
-                    View Details
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  <TableCell className="pr-6 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        router.push(`/admin/digit-draws/${slot.id}`)
+                      }
+                    >
+                      View Details
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
+    </RefreshWrapper>
   );
 }

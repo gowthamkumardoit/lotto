@@ -23,7 +23,7 @@ export function DrawsEmptyState() {
         {/* CTA */}
         <div className="mt-6">
           <DrawNameDialog>
-            <Button size="sm">+ Create Draw</Button>
+            <Button size="sm">+ Add Kuber X</Button>
           </DrawNameDialog>
         </div>
 

@@ -5,52 +5,85 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getDateFromDrawRunId } from "@/utils/getDateFromDrawRunId";
 
+type ProductType = "kuberX" | "kuberGold";
+
 interface Ticket {
-    amount: number;
-    type: "2D" | "3D" | "4D";
-    drawRunId: string;
+  amount: number;
+  type: "2D" | "3D" | "4D";
+  drawRunId?: string;
+  slotId?: string;
+  createdAt?: any;
 }
 
-export function useSalesAnalytics() {
-    const [tickets, setTickets] = useState<Ticket[]>([]);
+export function useSalesAnalytics(product: ProductType = "kuberX") {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
-    useEffect(() => {
-        return onSnapshot(collection(db, "tickets"), (snap) => {
-            setTickets(snap.docs.map(d => d.data() as Ticket));
-        });
-    }, []);
+  useEffect(() => {
+    const collectionName =
+      product === "kuberGold" ? "kuberGoldTickets" : "tickets";
 
-    return useMemo(() => {
-        let totalSales = 0;
-        const dailyMap = new Map<string, { sales: number; tickets: number }>();
-        const typeSplit: Record<string, number> = { "2D": 0, "3D": 0, "4D": 0 };
+    const unsub = onSnapshot(collection(db, collectionName), (snap) => {
+      setTickets(snap.docs.map((d) => d.data() as Ticket));
+    });
 
-        tickets.forEach(t => {
-            totalSales += t.amount;
-            typeSplit[t.type] += 1;
+    return () => unsub();
+  }, [product]);
 
-            const date = getDateFromDrawRunId(t.drawRunId);
-            if (!date) return;
+  return useMemo(() => {
+    let totalSales = 0;
 
-            const d = dailyMap.get(date) ?? { sales: 0, tickets: 0 };
-            d.sales += t.amount;
-            d.tickets += 1;
-            dailyMap.set(date, d);
-        });
+    const dailyMap = new Map<string, { sales: number; tickets: number }>();
+    const typeSplit: Record<string, number> = {
+      "2D": 0,
+      "3D": 0,
+      "4D": 0,
+    };
 
-        return {
-            totalSales,
-            tickets,
-            totalTickets: tickets.length,
-            dailySalesData: Array.from(dailyMap.entries()).map(([date, v]) => ({
-                date,
-                sales: v.sales,
-                tickets: v.tickets,
-            })),
-            ticketTypeSplit: Object.entries(typeSplit).map(([name, value]) => ({
-                name,
-                value,
-            })),
-        };
-    }, [tickets]);
+    tickets.forEach((t) => {
+      totalSales += t.amount ?? 0;
+      typeSplit[t.type] += 1;
+
+      let date: string | null = null;
+
+      if (product === "kuberX") {
+        const d = getDateFromDrawRunId(t.drawRunId);
+        if (d) date = d;
+      } else {
+        // Kuber Gold → use createdAt
+        if (t.createdAt?.toDate) {
+          date = t.createdAt.toDate().toISOString().split("T")[0];
+        }
+      }
+
+      if (!date) return;
+
+      const existing = dailyMap.get(date) ?? { sales: 0, tickets: 0 };
+
+      existing.sales += t.amount ?? 0;
+      existing.tickets += 1;
+
+      dailyMap.set(date, existing);
+    });
+
+    return {
+      totalSales,
+      tickets,
+      totalTickets: tickets.length,
+
+      dailySalesData: Array.from(dailyMap.entries())
+        .map(([date, v]) => ({
+          date,
+          sales: v.sales,
+          tickets: v.tickets,
+        }))
+        .sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        ),
+
+      ticketTypeSplit: Object.entries(typeSplit).map(([name, value]) => ({
+        name,
+        value,
+      })),
+    };
+  }, [tickets, product]);
 }

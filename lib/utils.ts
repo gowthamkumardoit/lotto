@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 /**
- * Merge Tailwind + conditional classNames safely add new comment
+ * Merge Tailwind + conditional classNames safely
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

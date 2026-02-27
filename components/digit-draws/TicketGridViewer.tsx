@@ -18,7 +18,7 @@ export function TicketAvailabilityViewer({ slotId, digits }: Props) {
 
   useEffect(() => {
     const q = query(
-      collection(db, "digitDrawTickets"),
+      collection(db, "kuberGoldTickets"),
       where("slotId", "==", slotId),
     );
 

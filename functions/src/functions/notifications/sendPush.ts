@@ -6,17 +6,22 @@ const db = getFirestore();
 type NotificationPayload = {
   screen: "home" | "wallet" | "profile" | "history" | "support";
   action:
-  | "kyc_approved"
-  | "kyc_rejected"
-  | "withdraw_approved"
-  | "withdraw_rejected"
-  | "topUp_approved"
-  | "topUp_rejected"
-  | "upi_approved"
-  | "upi_rejected"
-  | "ticket_won"
-  | "support_reply"
-  | "admin_broadcast";
+    | "kyc_approved"
+    | "kyc_rejected"
+    | "withdraw_approved"
+    | "withdraw_rejected"
+    | "topUp_approved"
+    | "topUp_rejected"
+    | "upi_approved"
+    | "upi_rejected"
+    | "ticket_won"
+    | "support_reply"
+    | "admin_broadcast"
+    | "digit_draw_win"
+    | "signup_bonus"
+    | "bank_pending"
+    | "bank_approved"
+    | "bank_rejected";
   id?: string; // ticketId | withdrawId | etc
 };
 
@@ -24,7 +29,7 @@ export async function sendUserNotification(
   uid: string,
   title: string,
   body: string,
-  payload: NotificationPayload
+  payload: NotificationPayload,
 ) {
   try {
     const snap = await db.collection("users").doc(uid).get();

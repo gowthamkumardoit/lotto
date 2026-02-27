@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Calendar,
@@ -26,6 +26,8 @@ import {
   Send,
   UserCog,
   QrCode,
+  Megaphone,
+  Building,
 } from "lucide-react";
 import { getAuth } from "firebase/auth";
 
@@ -34,13 +36,16 @@ import { usePlatformConfigStore } from "@/store/platformConfig.store";
 import { Role } from "@/constants/roles";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
+
 /* ---------------- NAV CONFIG ---------------- */
+
 export type AdminPendingCounts = {
   deposits: number;
   withdrawals: number;
   supportTickets: number;
   kycRequests: number;
   upiWithdrawals: number;
+  bankAccounts: number;
 };
 const navItems: {
   label: string;
@@ -62,17 +67,17 @@ const navItems: {
   },
 
   {
-    label: "Digit Draws",
+    label: "Kuber Golds Draws",
     href: "/admin/digit-draws",
     icon: Calendar,
     roles: ["ADMIN", "MANAGER"],
   },
-  // {
-  //   label: "Draws",
-  //   href: "/admin/draws",
-  //   icon: Calendar,
-  //   roles: ["ADMIN", "MANAGER"],
-  // },
+  {
+    label: "Kuber X Draws",
+    href: "/admin/draws",
+    icon: Calendar,
+    roles: ["ADMIN", "MANAGER"],
+  },
   {
     label: "Tickets",
     href: "/admin/tickets",
@@ -111,6 +116,12 @@ const navItems: {
     label: "Upi Requests",
     href: "/admin/upi-requests",
     icon: QrCode,
+    roles: ["ADMIN", "MANAGER", "SUPPORT"],
+  },
+  {
+    label: "Bank Requests",
+    href: "/admin/bank-requests",
+    icon: Building,
     roles: ["ADMIN", "MANAGER", "SUPPORT"],
   },
   {
@@ -155,6 +166,12 @@ const navItems: {
     roles: ["ADMIN"],
   },
   {
+    label: "Promotions",
+    href: "/admin/promotions",
+    icon: Megaphone,
+    roles: ["ADMIN"],
+  },
+  {
     label: "Telegram Msg Settings",
     href: "/admin/telegram-msg",
     icon: Send,
@@ -171,12 +188,16 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [role, setRole] = useState<Role | null>(null);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousCountsRef = useRef<AdminPendingCounts | null>(null);
+
   const [pendingCounts, setPendingCounts] = useState<AdminPendingCounts>({
     deposits: 0,
     withdrawals: 0,
     supportTickets: 0,
     kycRequests: 0,
     upiWithdrawals: 0,
+    bankAccounts: 0,
   });
   const platformName =
     usePlatformConfigStore((s) => s.config?.general.platformName) ??
@@ -223,6 +244,25 @@ export default function Sidebar() {
   }, [auth]);
 
   /* -------- LOAD BADGE COUNTS -------- */
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .then(() => {
+            audioRef.current?.pause();
+            audioRef.current!.currentTime = 0;
+          })
+          .catch(() => {});
+      }
+
+      window.removeEventListener("click", unlockAudio);
+    };
+
+    window.addEventListener("click", unlockAudio);
+
+    return () => window.removeEventListener("click", unlockAudio);
+  }, []);
 
   useEffect(() => {
     const ref = doc(db, "admin_stats", "pending_counts");
@@ -232,13 +272,34 @@ export default function Sidebar() {
 
       const data = snap.data();
 
-      setPendingCounts({
+      const newCounts: AdminPendingCounts = {
         deposits: data.deposits ?? 0,
         withdrawals: data.withdrawals ?? 0,
         supportTickets: data.supportTickets ?? 0,
         kycRequests: data.kycRequests ?? 0,
         upiWithdrawals: data.upiWithdrawals ?? 0,
-      });
+        bankAccounts: data.bankAccounts ?? 0,
+      };
+
+      if (previousCountsRef.current) {
+        const prev = previousCountsRef.current;
+
+        const hasIncrease =
+          newCounts.deposits > prev.deposits ||
+          newCounts.withdrawals > prev.withdrawals ||
+          newCounts.supportTickets > prev.supportTickets ||
+          newCounts.kycRequests > prev.kycRequests ||
+          newCounts.upiWithdrawals > prev.upiWithdrawals ||
+          newCounts.bankAccounts > prev.bankAccounts;
+
+        if (hasIncrease && audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(() => {});
+        }
+      }
+
+      previousCountsRef.current = newCounts;
+      setPendingCounts(newCounts);
     });
 
     return () => unsub();
@@ -270,6 +331,8 @@ export default function Sidebar() {
         return pendingCounts.kycRequests;
       case "/admin/upi-requests":
         return pendingCounts.upiWithdrawals;
+      case "/admin/bank-requests":
+        return pendingCounts.bankAccounts;
       default:
         return 0;
     }

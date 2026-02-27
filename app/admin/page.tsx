@@ -27,6 +27,7 @@ import { useAuditAnalytics } from "@/hooks/useAuditAnalytics";
 /* ---------------- DATE HELPERS ---------------- */
 
 type DateRange = "today" | "yesterday" | "last7" | "total" | "custom";
+type ProductType = "kuberX" | "kuberGold";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -78,21 +79,20 @@ function getRange(range: DateRange, customFrom?: string, customTo?: string) {
       return null; // total
   }
 }
+function getDateFromRunId(drawRunId?: string | null): Date | null {
+  if (!drawRunId) return null;
 
-function getDateFromRunId(drawRunId: string): Date | null {
-  const [, datePart] = drawRunId.split("_");
-  if (!datePart) return null;
-  const d = new Date(datePart);
+  const match = drawRunId.match(/\d{4}-\d{2}-\d{2}/);
+  if (!match) return null;
+
+  const d = new Date(match[0]);
   return isNaN(d.getTime()) ? null : d;
 }
 
 /* ---------------- PAGE ---------------- */
 
 export default function AdminDashboardPage() {
-  const sales = useSalesAnalytics();
-  const payout = usePayoutAnalytics();
-  const audits = useAuditAnalytics();
-
+  const [product, setProduct] = useState<ProductType>("kuberX");
   const [range, setRange] = useState<DateRange>("total");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -100,6 +100,18 @@ export default function AdminDashboardPage() {
     () => getRange(range, fromDate, toDate),
     [range, fromDate, toDate],
   );
+
+  const salesX = useSalesAnalytics("kuberX");
+  const payoutX = usePayoutAnalytics("kuberX");
+  const auditsX = useAuditAnalytics("kuberX");
+
+  const salesGold = useSalesAnalytics("kuberGold");
+  const payoutGold = usePayoutAnalytics("kuberGold");
+  const auditsGold = useAuditAnalytics("kuberGold");
+
+  const sales = product === "kuberGold" ? salesGold : salesX;
+  const payout = product === "kuberGold" ? payoutGold : payoutX;
+  const audits = product === "kuberGold" ? auditsGold : auditsX;
 
   /* -------- FILTERED DAILY DATA (charts) -------- */
 
@@ -120,67 +132,109 @@ export default function AdminDashboardPage() {
 
   /* -------- FILTERED KPIs -------- */
 
-  const filteredTotals = useMemo(() => {
-    let totalSales = 0;
-    let totalTickets = 0;
-    let totalPayout = 0;
+const filteredTotals = useMemo(() => {
+  let totalSales = 0;
+  let totalTickets = 0;
+  let totalPayout = 0;
 
-    sales.tickets.forEach((t: any) => {
-      const d = getDateFromRunId(t.drawRunId);
-      if (!d) return;
+  /* -------- SALES -------- */
+  sales.tickets.forEach((t: any) => {
+    let d: Date | null = null;
 
-      if (rangeObj) {
-        if (d < rangeObj.from || d > rangeObj.to) return;
+    if (product === "kuberX") {
+      d = getDateFromRunId(t.drawRunId);
+    } else {
+      if (t.createdAt?.toDate) {
+        d = t.createdAt.toDate();
       }
+    }
 
-      totalSales += t.amount ?? 0;
-      totalTickets += 1;
-    });
+    if (!d) return;
 
+    if (rangeObj) {
+      if (d < rangeObj.from || d > rangeObj.to) return;
+    }
 
-    payout.winners.forEach((w: any) => {
-      const d = getDateFromRunId(w.drawRunId);
-      if (!d) return;
+    totalSales += t.amount ?? 0;
+    totalTickets += 1;
+  });
 
-      if (rangeObj) {
-        if (d < rangeObj.from || d > rangeObj.to) return;
+  /* -------- PAYOUT -------- */
+  payout.winners.forEach((w: any) => {
+    let d: Date | null = null;
+
+    if (product === "kuberX") {
+      d = getDateFromRunId(w.drawRunId);
+    } else {
+      if (w.createdAt?.toDate) {
+        d = w.createdAt.toDate();
       }
+    }
 
-      totalPayout += w.winAmount ?? 0;
-    });
+    if (!d) return;
 
-    return { totalSales, totalTickets, totalPayout };
-  }, [sales.tickets, payout.winners, rangeObj]);
+    if (rangeObj) {
+      if (d < rangeObj.from || d > rangeObj.to) return;
+    }
+
+    totalPayout += w.winAmount ?? 0;
+  });
+
+  return { totalSales, totalTickets, totalPayout };
+}, [sales.tickets, payout.winners, rangeObj, product]);
 
   const net = filteredTotals.totalSales - filteredTotals.totalPayout;
 
   /* -------- PIE DATA -------- */
 
-  const filteredTicketTypeSplit = useMemo(() => {
-    const map: Record<string, number> = { "2D": 0, "3D": 0, "4D": 0 };
+const filteredTicketTypeSplit = useMemo(() => {
+  const map: Record<string, number> = { "2D": 0, "3D": 0, "4D": 0 };
 
-    sales.tickets.forEach((t: any) => {
-      const d = getDateFromRunId(t.drawRunId);
-      if (!d) return;
+  sales.tickets.forEach((t: any) => {
+    let d: Date | null = null;
 
-      if (rangeObj) {
-        if (d < rangeObj.from || d > rangeObj.to) return;
+    if (product === "kuberX") {
+      d = getDateFromRunId(t.drawRunId);
+    } else {
+      if (t.createdAt?.toDate) {
+        d = t.createdAt.toDate();
       }
+    }
 
-      map[t.type] += 1;
-    });
+    if (!d) return;
 
-    return Object.entries(map).map(([name, value]) => ({
-      name,
-      value,
-    }));
-  }, [sales.tickets, rangeObj]);
+    if (rangeObj) {
+      if (d < rangeObj.from || d > rangeObj.to) return;
+    }
+
+    map[t.type] = (map[t.type] ?? 0) + 1;
+  });
+
+  return Object.entries(map).map(([name, value]) => ({
+    name,
+    value,
+  }));
+}, [sales.tickets, rangeObj, product]);
 
   const PIE_COLORS = ["#22c55e", "#3b82f6", "#f97316"];
 
   return (
     <div className="p-6 space-y-6">
       {/* HEADER + FILTERS */}
+
+      <div className="flex gap-2">
+        <RangePill
+          label="Kuber X"
+          active={product === "kuberX"}
+          onClick={() => setProduct("kuberX")}
+        />
+
+        <RangePill
+          label="Kuber Gold"
+          active={product === "kuberGold"}
+          onClick={() => setProduct("kuberGold")}
+        />
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Lottery Admin Dashboard</h1>

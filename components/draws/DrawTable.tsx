@@ -2,7 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { CalendarX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -94,21 +100,27 @@ export function DrawTable() {
   const [selectedResult, setSelectedResult] = useState<DrawResult | null>(null);
   const [runOpen, setRunOpen] = useState(false);
 
-  const today = new Date();
-  const todayISO = today.toISOString().slice(0, 10);
+  const [todayISO] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  const tomorrowISO = tomorrow.toISOString().slice(0, 10);
+  const [tomorrowISO] = useState(() => {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return t.toISOString().slice(0, 10);
+  });
 
   const router = useRouter();
+
+  const [refreshKey, setRefreshKey] = useState(0);
 
   /* ---------------- FIRESTORE LISTENER ---------------- */
 
   useEffect(() => {
+    setLoading(true);
+
     const q = query(
       collection(db, "drawRuns"),
-      where("date", "in", [todayISO, tomorrowISO]),
+      where("date", "==", todayISO),
+      orderBy("time", "asc"),
     );
 
     const unsub = onSnapshot(
@@ -117,17 +129,14 @@ export function DrawTable() {
         const rows: Draw[] = snap.docs.map((doc) => {
           const d = doc.data();
 
-          let status: UIStatus;
-          if (d.status === "OPEN") {
-            status = "OPEN";
-          } else if (d.status === "LOCKED") {
-            status = "LOCKED";
-          } else if (d.status === "RUNNING") {
-            status = "RUNNING";
-          } else {
-            status = "DRAWN";
-          }
-          const date: string = typeof d.date === "string" ? d.date : todayISO;
+          let status: UIStatus =
+            d.status === "OPEN"
+              ? "OPEN"
+              : d.status === "LOCKED"
+                ? "LOCKED"
+                : d.status === "RUNNING"
+                  ? "RUNNING"
+                  : "DRAWN";
 
           return {
             id: doc.id,
@@ -136,23 +145,21 @@ export function DrawTable() {
             sales: d.sales ?? 0,
             status,
             result: d.result ?? null,
-            date,
+            date: d.date,
           };
         });
 
-        setDraws(
-          rows.sort(
-            (a, b) => toDateTime(a.date, a.time) - toDateTime(b.date, b.time),
-          ),
-        );
-
+        setDraws(rows); // no manual sort needed now
         setLoading(false);
       },
-      () => setLoading(false),
+      (error) => {
+        console.error("Draw listener error:", error);
+        setLoading(false);
+      },
     );
 
     return () => unsub();
-  }, [today]);
+  }, [todayISO, refreshKey]);
 
   /* ---------------- ACTION HANDLERS ---------------- */
 
@@ -195,12 +202,25 @@ export function DrawTable() {
   /* ---------------- RENDER ---------------- */
 
   return (
-    <div className="rounded-xl border bg-background shadow-sm min-h-[520px] flex flex-col">
-      <div className="border-b px-5 py-4">
+    <div
+      className={`rounded-xl border bg-background shadow-sm flex flex-col ${
+        !draws.length ? "min-h-[400px]" : ""
+      }`}
+    >
+      <div className="border-b px-5 py-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold">Today’s Draws</h3>
         <p className="text-sm text-muted-foreground">
           Manage draw lifecycle and monitor sales
         </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setRefreshKey((prev) => prev + 1)}
+          className="group"
+        >
+          <Loader2 className="mr-2 h-4 w-4 transition-transform group-active:rotate-180" />
+          Refresh
+        </Button>
       </div>
 
       <div className="flex flex-1 flex-col">

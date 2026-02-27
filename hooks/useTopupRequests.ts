@@ -18,7 +18,7 @@ export type TopupRequest = {
   createdAt: Date;
 };
 
-export function useTopupRequests() {
+export function useTopupRequests(refreshKey?: number) {
   const [data, setData] = useState<TopupRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ export function useTopupRequests() {
     });
 
     return () => unsub();
-  }, []);
+  }, [refreshKey]);
 
   return { data, loading };
 }

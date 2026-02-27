@@ -93,7 +93,7 @@ export function DrawNameDialog({
     setError("");
 
     const toastId = toast.loading(
-      isEdit ? "Updating draw..." : "Creating draw..."
+      isEdit ? "Updating Kuber X draw..." : "Creating Kuber X draw..."
     );
 
     try {
@@ -106,7 +106,7 @@ export function DrawNameDialog({
       }
 
       toast.success(
-        isEdit ? "Draw updated successfully" : "Draw created successfully",
+        isEdit ? "Kuber X Draw updated successfully" : "Kuber X Draw created successfully",
         { id: toastId }
       );
 
@@ -139,12 +139,12 @@ export function DrawNameDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children ?? <Button>{isEdit ? "Edit Draw" : "+ Add Draw"}</Button>}
+        {children ?? <Button variant="destructive">{isEdit ? "Edit Kuber X" : "+ Add Kuber X"}</Button>}
       </DialogTrigger>
 
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Draw" : "Create Draw"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Kuber X" : "Create Kuber X"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -173,7 +173,7 @@ export function DrawNameDialog({
             disabled={loading || isUnchanged}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "Save Changes" : "Create Draw"}
+            {isEdit ? "Save Changes" : "Create Kuber X"}
           </Button>
         </div>
       </DialogContent>

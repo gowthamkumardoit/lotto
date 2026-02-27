@@ -11,7 +11,7 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -31,6 +31,7 @@ import WithdrawReviewDrawer from "@/components/withdrawals/WithdrawReviewDrawer"
 
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 
 /* ---------------- Types ---------------- */
 
@@ -57,32 +58,34 @@ export default function WithdrawalRequestsPage() {
 
   /* ---------------- Load withdrawals ---------------- */
 
-  useState(() => {
-    async function load() {
-      try {
-        const q = query(
-          collection(db, "withdrawalRequests"),
-          orderBy("createdAt", "desc"),
-        );
+  const loadWithdrawals = async () => {
+    try {
+      setLoading(true);
 
-        const snap = await getDocs(q);
+      const q = query(
+        collection(db, "withdrawalRequests"),
+        orderBy("createdAt", "desc"),
+      );
 
-        setWithdrawals(
-          snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as any),
-            createdAt: d.data().createdAt.toDate(),
-          })),
-        );
-      } catch (e) {
-        toast.error("Failed to load withdrawals");
-      } finally {
-        setLoading(false);
-      }
+      const snap = await getDocs(q);
+
+      setWithdrawals(
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as any),
+          createdAt: d.data().createdAt?.toDate?.() ?? new Date(),
+        })),
+      );
+    } catch (e) {
+      toast.error("Failed to load withdrawals");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    load();
-  });
+  useEffect(() => {
+    loadWithdrawals();
+  }, []);
 
   /* ---------------- Users ---------------- */
 
@@ -187,86 +190,93 @@ export default function WithdrawalRequestsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Withdrawal Requests</h1>
-        <p className="text-sm text-muted-foreground">
-          User withdrawal requests pending admin review
-        </p>
-      </div>
+    <RefreshWrapper onRefresh={loadWithdrawals}>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Withdrawal Requests</h1>
+          <p className="text-sm text-muted-foreground">
+            User withdrawal requests pending admin review
+          </p>
+        </div>
 
-      {/* Search */}
-      <Input
-        type="search"
-        placeholder="Search by user / phone / amount"
-        value={globalFilter}
-        onChange={(e) => setGlobalFilter(e.target.value)}
-        className="w-80"
-      />
+        {/* Search */}
+        <Input
+          type="search"
+          placeholder="Search by user / phone / amount"
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="w-80"
+        />
 
-      {/* Table */}
-      <div className="rounded-xl border bg-background">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => (
-                  <TableHead key={h.id}>
-                    {flexRender(h.column.columnDef.header, h.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+        {/* Table */}
+        <div className="rounded-xl border bg-background">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id}>
+                  {hg.headers.map((h) => (
+                    <TableHead key={h.id}>
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
 
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
-                  Loading…
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading && table.getRowModel().rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
-                  No withdrawal requests found
-                </TableCell>
-              </TableRow>
-            )}
-
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={async () => {
-                  try {
-                    const full = await getWithdrawalWithWallet(row.original.id);
-                    setSelectedWithdrawal(full);
-                    setOpenReview(true);
-                  } catch {
-                    toast.error("Failed to load withdrawal details");
-                  }
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10">
+                    Loading…
                   </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                </TableRow>
+              )}
 
-      {/* Drawer */}
-      <WithdrawReviewDrawer
-        open={openReview}
-        withdrawal={selectedWithdrawal}
-        onClose={() => setOpenReview(false)}
-      />
-    </div>
+              {!loading && table.getRowModel().rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10">
+                    No withdrawal requests found
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={async () => {
+                    try {
+                      const full = await getWithdrawalWithWallet(
+                        row.original.id,
+                      );
+                      setSelectedWithdrawal(full);
+                      setOpenReview(true);
+                    } catch {
+                      toast.error("Failed to load withdrawal details");
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Drawer */}
+        <WithdrawReviewDrawer
+          open={openReview}
+          withdrawal={selectedWithdrawal}
+          onClose={() => setOpenReview(false)}
+        />
+      </div>
+    </RefreshWrapper>
   );
 }

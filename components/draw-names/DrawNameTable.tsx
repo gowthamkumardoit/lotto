@@ -76,7 +76,7 @@ export function DrawNameTable() {
     <div className="rounded-xl border bg-background shadow-sm">
       {/* Header */}
       <div className="border-b px-5 py-4">
-        <h3 className="text-lg font-semibold">Draws</h3>
+        <h3 className="text-lg font-semibold">Kuber X Draws</h3>
         <p className="text-sm text-muted-foreground">
           Manage scheduled lottery draws
         </p>

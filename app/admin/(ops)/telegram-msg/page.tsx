@@ -16,6 +16,8 @@ const LANGUAGES = [
   { key: "ta", label: "Tamil" },
   { key: "ml", label: "Malayalam" },
   { key: "hi", label: "Hindi" },
+  { key: "kn", label: "Kannada" },
+  { key: "te", label: "Telugu" },
 ];
 
 export default function TelegramMessageSettingsPage() {
@@ -93,10 +95,13 @@ export default function TelegramMessageSettingsPage() {
                   />
 
                   <p className="text-xs text-muted-foreground">
-                    Variables: <code>{"{{name}}"}</code>
+                    Variables:
+                    <code> {"{{name}}"}</code>
+                    <code> {"{{drawName}}"}</code>
                     {status === "SETTLED" && (
                       <>
-                        , <code>{"{{result}}"}</code>
+                        <code> {"{{result}}"}</code>
+                        <code> {"{{amount}}"}</code>
                       </>
                     )}
                   </p>
