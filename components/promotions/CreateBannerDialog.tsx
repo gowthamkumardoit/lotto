@@ -11,22 +11,10 @@ import { doc, updateDoc } from "firebase/firestore";
 
 type RedirectType = "DRAW" | "EXTERNAL" | "NONE";
 
-interface Banner {
-  id: string;
-  title: string;
-  subtitle: string;
-  images: string[];
-  redirectType: RedirectType;
-  redirectValue: string;
-  startDate: string | null;
-  endDate: string | null;
-  active: boolean;
-}
-
 interface Props {
   open: boolean;
   onClose: () => void;
-  editingBanner?: Banner;
+  editingBanner?: any;
 }
 
 export default function CreateBannerDialog({
@@ -69,12 +57,7 @@ export default function CreateBannerDialog({
 
   if (!open) return null;
 
-  type FormState = typeof form;
-
-  const handleChange = <K extends keyof FormState>(
-    key: K,
-    value: FormState[K],
-  ) => {
+  const handleChange = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -165,10 +148,8 @@ export default function CreateBannerDialog({
 
       resetState();
       onClose();
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Operation failed";
-      toast.error(message);
+    } catch (error: any) {
+      toast.error(error?.message || "Operation failed");
     } finally {
       setLoading(false);
     }
