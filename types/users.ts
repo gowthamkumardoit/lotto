@@ -14,15 +14,13 @@ export type User = {
   status: UserStatus; // ✅ keep status
   createdAt: Date;
   lastLoginAt?: Date;
+  role: string;
 };
-
 
 // users collection shape
 export type UserProfile = {
-    uid: string;
-    username?: string;
-    displayName?: string;
-    phone?: string;
+  uid: string;
+  username?: string;
+  displayName?: string;
+  phone?: string;
 };
-
-

@@ -75,11 +75,16 @@ export default function DrawDetailsPage() {
       ref,
       (snap) => {
         if (snap.exists()) {
+          const data = snap.data() as DrawRun;
+
+          const { id: _ignored, ...rest } = data;
+
           setDraw({
             id: snap.id,
-            ...(snap.data() as DrawRun),
+            ...rest,
           });
         }
+
         setLoading(false);
       },
       () => setLoading(false),

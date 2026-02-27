@@ -98,18 +98,23 @@ export default function AuditLogsTable({
     const q = query(collection(db, "adminActivityLogs"), ...constraints);
 
     const unsub = onSnapshot(q, (snap) => {
-      let rows: AuditLog[] = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as AuditLog),
-      }));
+      let rows: AuditLog[] = snap.docs.map((doc) => {
+        const data = doc.data() as AuditLog;
 
+        const { id: _ignored, ...rest } = data;
+
+        return {
+          id: doc.id,
+          ...rest,
+        };
+      });
       // 🔍 Client-side search (safe: only 50 rows)
       if (filters.search) {
         const s = filters.search.toLowerCase();
         rows = rows.filter(
           (r) =>
             r.action.toLowerCase().includes(s) ||
-            r.actorType.toLowerCase().includes(s)
+            r.actorType.toLowerCase().includes(s),
         );
       }
 
@@ -154,10 +159,16 @@ export default function AuditLogsTable({
 
     const snap = await getDocs(q);
 
-    const rows: AuditLog[] = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as AuditLog),
-    }));
+    let rows: AuditLog[] = snap.docs.map((doc) => {
+      const data = doc.data() as AuditLog;
+
+      const { id: _ignored, ...rest } = data;
+
+      return {
+        id: doc.id,
+        ...rest,
+      };
+    });
 
     setLogs((prev) => [...prev, ...rows]);
     setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
@@ -230,7 +241,7 @@ export default function AuditLogsTable({
                     log.entity === "DRAW" && "bg-violet-500/15 text-violet-600",
                     log.entity === "WALLET" &&
                       "bg-emerald-500/15 text-emerald-600",
-                    log.entity === "SYSTEM" && "bg-zinc-500/15 text-zinc-600"
+                    log.entity === "SYSTEM" && "bg-zinc-500/15 text-zinc-600",
                   )}
                 >
                   <Database className="mr-1 h-3 w-3" />
@@ -252,8 +263,8 @@ export default function AuditLogsTable({
                 {typeof log.metadata === "string"
                   ? log.metadata
                   : log.metadata
-                  ? JSON.stringify(log.metadata)
-                  : "-"}
+                    ? JSON.stringify(log.metadata)
+                    : "-"}
               </TableCell>
 
               <TableCell className="text-sm text-muted-foreground">

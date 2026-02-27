@@ -79,18 +79,23 @@ export default function NotificationsTable({
     const q = query(collection(db, "adminNotifications"), ...constraints);
 
     const unsub = onSnapshot(q, (snap) => {
-      let data = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Notification),
-      }));
+      let data = snap.docs.map((d) => {
+        const docData = d.data() as Notification;
 
+        const { id: _ignored, ...rest } = docData;
+
+        return {
+          id: d.id,
+          ...rest,
+        };
+      });
       // client-side search (safe: page only)
       if (filters.search) {
         const s = filters.search.toLowerCase();
         data = data.filter(
           (n) =>
             n.title.toLowerCase().includes(s) ||
-            n.message.toLowerCase().includes(s)
+            n.message.toLowerCase().includes(s),
         );
       }
 
@@ -127,11 +132,16 @@ export default function NotificationsTable({
 
     const snap = await getDocs(q);
 
-    const more = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Notification),
-    }));
+    const more = snap.docs.map((d) => {
+      const docData = d.data() as Notification;
 
+      const { id: _ignored, ...rest } = docData;
+
+      return {
+        id: d.id,
+        ...rest,
+      };
+    });
     setRows((p) => [...p, ...more]);
     setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
     setHasMore(snap.docs.length === PAGE_SIZE);
@@ -185,7 +195,7 @@ export default function NotificationsTable({
                   className={cn(
                     n.type === "INFO" && "bg-sky-500/15 text-sky-600",
                     n.type === "PROMO" && "bg-emerald-500/15 text-emerald-600",
-                    n.type === "ALERT" && "bg-red-500/15 text-red-600"
+                    n.type === "ALERT" && "bg-red-500/15 text-red-600",
                   )}
                 >
                   {n.type}

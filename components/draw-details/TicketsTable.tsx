@@ -70,7 +70,7 @@ export function TicketsTable({ drawRunId }: { drawRunId: string }) {
           collection(db, "tickets"),
           where("drawRunId", "==", drawRunId),
           orderBy("createdAt", "asc"),
-          limit(PAGE_SIZE)
+          limit(PAGE_SIZE),
         );
       } else {
         q = query(
@@ -78,17 +78,22 @@ export function TicketsTable({ drawRunId }: { drawRunId: string }) {
           where("drawRunId", "==", drawRunId),
           orderBy("createdAt", "asc"),
           startAfter(lastDoc),
-          limit(PAGE_SIZE)
+          limit(PAGE_SIZE),
         );
       }
 
       const snap = await getDocs(q);
 
-      const rows: Ticket[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Ticket),
-      }));
+      const rows: Ticket[] = snap.docs.map((d) => {
+        const data = d.data() as Ticket;
 
+        const { id: _ignored, ...rest } = data;
+
+        return {
+          id: d.id,
+          ...rest,
+        };
+      });
       setTickets(rows);
       setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
       setHasNext(snap.docs.length === PAGE_SIZE);

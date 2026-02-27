@@ -12,8 +12,12 @@ export function UsersFilters({
   globalFilter: string;
   setGlobalFilter: Dispatch<SetStateAction<string>>;
 }) {
-  const role = filters.find((f) => f.id === "role")?.value ?? "";
-  const status = filters.find((f) => f.id === "status")?.value ?? "";
+  const roleFilter = filters.find((f) => f.id === "role");
+  const role = typeof roleFilter?.value === "string" ? roleFilter.value : "";
+
+  const statusFilter = filters.find((f) => f.id === "status");
+  const status =
+    typeof statusFilter?.value === "string" ? statusFilter.value : "";
 
   // ✅ LOCAL INPUT STATE (for debounce)
   const [input, setInput] = useState(globalFilter);

@@ -40,7 +40,7 @@ const mockVelocityData = [
   { time: "10:40", sold: 140 }, // 🔥 peak
   { time: "10:50", sold: 61 },
   { time: "11:00", sold: 22 },
-  { time: "11:10", sold: 8 },   // 🐢 slow
+  { time: "11:10", sold: 8 }, // 🐢 slow
 ];
 
 type JackpotStatus = "CREATED" | "OPEN" | "GUARANTEED" | "LOCKED" | "SETTLED";
@@ -82,11 +82,16 @@ export default function JackpotDetailsPage() {
       ref,
       (snap) => {
         if (snap.exists()) {
+          const data = snap.data() as JackpotDraw;
+
+          const { id: _ignored, ...rest } = data;
+
           setJackpot({
             id: snap.id,
-            ...(snap.data() as JackpotDraw),
+            ...rest,
           });
         }
+
         setLoading(false);
       },
       () => setLoading(false),
