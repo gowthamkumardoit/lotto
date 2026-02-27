@@ -13,6 +13,11 @@ type Props = {
   disabled?: boolean;
 };
 
+interface ExtendRequest {
+  slotId: string;
+  newCloseAt: string;
+}
+
 const EXTENSIONS = [
   { label: "+5m", ms: 5 * 60 * 1000 },
   { label: "+10m", ms: 10 * 60 * 1000 },
@@ -40,7 +45,7 @@ export function ExtendCloseTimePanel({
         Math.max(currentCloseAt.getTime(), Date.now()) + ms,
       );
 
-      const fn = httpsCallable(functions, callableName);
+      const fn = httpsCallable<ExtendRequest, void>(functions, callableName);
 
       await fn({
         slotId,
@@ -48,9 +53,13 @@ export function ExtendCloseTimePanel({
       });
 
       toast.success(`Extended by ${label}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Extension failed:", error);
-      toast.error(error?.message || "Failed to extend time");
+
+      const message =
+        error instanceof Error ? error.message : "Failed to extend time";
+
+      toast.error(message);
     } finally {
       setLoading(null);
     }

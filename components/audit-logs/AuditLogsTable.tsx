@@ -159,7 +159,7 @@ export default function AuditLogsTable({
 
     const snap = await getDocs(q);
 
-    let rows: AuditLog[] = snap.docs.map((doc) => {
+    const rows: AuditLog[] = snap.docs.map((doc) => {
       const data = doc.data() as AuditLog;
 
       const { id: _ignored, ...rest } = data;

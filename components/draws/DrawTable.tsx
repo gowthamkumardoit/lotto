@@ -129,7 +129,7 @@ export function DrawTable() {
         const rows: Draw[] = snap.docs.map((doc) => {
           const d = doc.data();
 
-          let status: UIStatus =
+          const status: UIStatus =
             d.status === "OPEN"
               ? "OPEN"
               : d.status === "LOCKED"

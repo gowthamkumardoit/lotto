@@ -19,6 +19,22 @@ type PreviewProps = {
   winningNumber: string;
   digits: number;
 };
+interface PreviewResponse {
+  prizes: {
+    exact: number;
+    minusOne?: number;
+    minusTwo?: number;
+  };
+  totals: {
+    totalTickets: number;
+    totalSales: number;
+    totalPayout: number;
+    profit: number;
+  };
+  exactWinners?: unknown[];
+  minusOneWinners?: unknown[];
+  minusTwoWinners?: unknown[];
+}
 
 export function WinnerPreviewDialog({
   open,
@@ -28,8 +44,7 @@ export function WinnerPreviewDialog({
   digits,
 }: PreviewProps) {
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<any>(null);
-
+  const [preview, setPreview] = useState<PreviewResponse | null>(null);
   useEffect(() => {
     if (!open) return;
 
@@ -37,12 +52,19 @@ export function WinnerPreviewDialog({
       try {
         setLoading(true);
 
-        const previewFn = httpsCallable(functions, "previewDigitDrawWinners");
-        const res: any = await previewFn({ slotId });
+        const previewFn = httpsCallable<{ slotId: string }, PreviewResponse>(
+          functions,
+          "previewDigitDrawWinners",
+        );
+
+        const res = await previewFn({ slotId });
+        setPreview(res.data);
 
         setPreview(res.data);
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to load preview");
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load preview";
+        toast.error(message);
       } finally {
         setLoading(false);
       }
