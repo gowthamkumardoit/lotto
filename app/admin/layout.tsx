@@ -3,7 +3,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AuthRoleGuard } from "@/components/auth/AuthRoleGuard";
 import PlatformConfigBootstrap from "@/components/common/PlatformConfigBootstrap";
 import { DrawSoonAlertFromFirestore } from "@/components/common/DrawSoonAlertFromFirestore";
-
+import { Analytics } from "@vercel/analytics/next"
 export default function AdminLayout({
   children,
 }: {
@@ -17,7 +17,7 @@ export default function AdminLayout({
 
           {/* ✅ Client-side alert logic */}
           <DrawSoonAlertFromFirestore />
-
+          <Analytics />
           {children}
         </AdminShell>
       </AuthRoleGuard>

@@ -45,7 +45,7 @@ export default function UnauthorizedPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Lucky Raja · Internal System
+          © {new Date().getFullYear()} Kuber Lottery · Internal System
         </p>
       </div>
     </div>
