@@ -32,14 +32,13 @@ import { ConfirmActionDialog } from "@/components/common/ConfirmActionDialog";
 import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
 
 export default function KycRequestsPage() {
- 
   const [globalFilter, setGlobalFilter] = useState("");
   const [actionUid, setActionUid] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-   const { data, loading } = useKycRequests(refreshKey);
+  const { data, loading } = useKycRequests(refreshKey);
   /* ---------------- Search ---------------- */
 
   const globalFilterFn: FilterFn<KycRequest> = (row, _, value) => {
@@ -93,13 +92,19 @@ export default function KycRequestsPage() {
       {
         accessorKey: "dob",
         header: "DOB",
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {new Date(row.original.dob).toLocaleDateString("en-IN")}
-          </span>
-        ),
-      },
+        cell: ({ row }) => {
+          const dob = row.original.dob; // "17-11-1989"
 
+          const [day, month, year] = dob.split("-");
+          const formattedDate = new Date(`${year}-${month}-${day}`);
+
+          return (
+            <span className="text-sm">
+              {formattedDate.toLocaleDateString("en-IN")}
+            </span>
+          );
+        },
+      },
       {
         accessorKey: "status",
         header: "Status",

@@ -89,7 +89,8 @@ export default function NotificationsTable({
           ...rest,
         };
       });
-      // client-side search (safe: page only)
+
+      console.log("data", data); // client-side search (safe: page only)
       if (filters.search) {
         const s = filters.search.toLowerCase();
         data = data.filter(

@@ -25,14 +25,12 @@ type SettledResult = {
   totalWinAmount: number;
 };
 
-
 /* ─────────────────────────────────────────────
    FUNCTION
    ───────────────────────────────────────────── */
 export const settleDrawRun = onCall(
   { region: "asia-south1" },
   async ({ data, auth }) => {
-
     const winnerNotifications: {
       uid: string;
       title: string;
@@ -66,22 +64,19 @@ export const settleDrawRun = onCall(
     if (drawRun.status !== "DRAWN") {
       throw new HttpsError(
         "failed-precondition",
-        "Draw must be DRAWN to settle"
+        "Draw must be DRAWN to settle",
       );
     }
 
     if (!drawRun.result || !drawRun.drawId) {
       throw new HttpsError(
         "failed-precondition",
-        "Draw result or drawId missing"
+        "Draw result or drawId missing",
       );
     }
 
     /* ───────── STEP 2: READ DRAW CONFIG ───────── */
-    const drawSnap = await db
-      .collection("draws")
-      .doc(drawRun.drawId)
-      .get();
+    const drawSnap = await db.collection("draws").doc(drawRun.drawId).get();
 
     if (!drawSnap.exists) {
       throw new HttpsError("not-found", "Draw config not found");
@@ -89,10 +84,7 @@ export const settleDrawRun = onCall(
 
     const config = drawSnap.data()!.config;
     if (!config) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Draw config missing"
-      );
+      throw new HttpsError("failed-precondition", "Draw config missing");
     }
 
     /* ───────── STEP 3: READ ALL TICKETS ───────── */
@@ -104,7 +96,7 @@ export const settleDrawRun = onCall(
     if (ticketsSnap.empty) {
       throw new HttpsError(
         "failed-precondition",
-        "No tickets found for this draw"
+        "No tickets found for this draw",
       );
     }
 
@@ -112,10 +104,7 @@ export const settleDrawRun = onCall(
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(drawRunRef);
       if (snap.data()?.status !== "DRAWN") {
-        throw new HttpsError(
-          "failed-precondition",
-          "Draw already settling"
-        );
+        throw new HttpsError("failed-precondition", "Draw already settling");
       }
       tx.update(drawRunRef, { status: "SETTLING" });
     });
@@ -126,7 +115,6 @@ export const settleDrawRun = onCall(
       "3D": { number: drawRun.result["3D"], winners: 0, totalWinAmount: 0 },
       "4D": { number: drawRun.result["4D"], winners: 0, totalWinAmount: 0 },
     };
-
 
     let totalPayout = 0;
     const BATCH_SIZE = 400;
@@ -155,6 +143,8 @@ export const settleDrawRun = onCall(
           batch.update(ticketDoc.ref, {
             status: "WON",
             winAmount,
+            winningNumber, // ✅ store winning number
+            settledAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
           // ✅ CREDIT wallet transaction
@@ -177,7 +167,7 @@ export const settleDrawRun = onCall(
           const { title, body } = getWinnerMessage(
             type,
             ticket.number,
-            winAmount
+            winAmount,
           );
 
           winnerNotifications.push({
@@ -205,18 +195,18 @@ export const settleDrawRun = onCall(
 
             settledAt: admin.firestore.FieldValue.serverTimestamp(),
           });
-        }
-        else {
+        } else {
           batch.update(ticketDoc.ref, {
             status: "LOST",
             winAmount: 0,
+            winningNumber, // ✅ still store result number
+            settledAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
       }
 
       await batch.commit();
     }
-
 
     /* ───────── STEP 6: FINALIZE DRAW RUN ───────── */
     await drawRunRef.update({
@@ -249,5 +239,5 @@ export const settleDrawRun = onCall(
       totalPayout,
       settledResult: settled,
     };
-  }
+  },
 );
