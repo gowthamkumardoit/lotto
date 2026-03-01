@@ -57,7 +57,7 @@ const navItems: {
     label: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
-    roles: ["ADMIN", "MANAGER", "SUPPORT"],
+    roles: ["ADMIN"],
   },
   {
     label: "Draw Names",

@@ -11,9 +11,27 @@ export default function AdminLoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!loading && user) {
-      router.replace("/admin");
-    }
+    const redirectByRole = async () => {
+      if (!loading && user) {
+        const token = await user.getIdTokenResult();
+        const role = token.claims.role as string | undefined;
+        console.log("role",role);
+
+        const roleRedirectMap: Record<string, string> = {
+          admin: "/admin",
+          manager: "/admin/deposits",
+          support: "/admin/kyc",
+        };
+
+        if (role && role in roleRedirectMap) {
+          router.replace(roleRedirectMap[role]);
+        } else {
+          router.replace("/unauthorized");
+        }
+      }
+    };
+
+    redirectByRole();
   }, [loading, user, router]);
 
   if (loading) return null;
