@@ -13,7 +13,7 @@ function getTomorrowKey() {
 
 export const createDailyDrawRunsCron = onSchedule(
   {
-    schedule: "every day 15:35",
+    schedule: "every day 16:00",
     timeZone: "Asia/Kolkata",
     region: "asia-south1",
   },
