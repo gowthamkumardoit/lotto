@@ -356,7 +356,7 @@ export default function Sidebar() {
               alt="Platform Logo"
               className="h-8 w-8 rounded object-contain"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                (e.currentTarget as HTMLImageElement).src = "/images/app_icon.png";
               }}
             />
             <div>

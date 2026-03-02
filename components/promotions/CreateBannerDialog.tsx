@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Upload, Trash2 } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -86,9 +91,39 @@ export default function CreateBannerDialog({
     });
   };
 
-  const removeImage = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  const removeImage = async (index: number) => {
+    const imageUrl = previews[index];
+
+    try {
+      // 🔥 If editing existing banner and image exists in DB
+      if (editingBanner && existingImages.includes(imageUrl)) {
+        // 1️⃣ Remove from Firestore document
+        const updatedImages = existingImages.filter((img) => img !== imageUrl);
+
+        await updateDoc(doc(db, "promotions", editingBanner.id), {
+          images: updatedImages,
+          updatedAt: serverTimestamp(),
+        });
+
+        setExistingImages(updatedImages);
+
+        // 2️⃣ Remove from Firebase Storage
+        try {
+          const imageRef = ref(storage, imageUrl);
+          await deleteObject(imageRef);
+        } catch (storageError) {
+          console.warn("Storage delete failed:", storageError);
+        }
+      }
+
+      // 🔥 Remove locally (for both new + existing images)
+      setFiles((prev) => prev.filter((_, i) => i !== index));
+      setPreviews((prev) => prev.filter((_, i) => i !== index));
+
+      toast.success("Image removed successfully");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to remove image");
+    }
   };
   const handleSubmit = async () => {
     if (!form.title || (existingImages.length === 0 && files.length === 0)) {
