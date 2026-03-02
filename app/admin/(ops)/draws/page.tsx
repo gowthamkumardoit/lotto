@@ -56,7 +56,7 @@ export default function DrawsPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <Button onClick={handleCreateDailyRuns} disabled={loading}>
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -65,7 +65,7 @@ export default function DrawsPage() {
             )}
             Create Today’s Draws
           </Button>
-        </div>
+        </div> */}
 
         {/* Draw Runs Table */}
         <DrawTable key={refreshKey} />
