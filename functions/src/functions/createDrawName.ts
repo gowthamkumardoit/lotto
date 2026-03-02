@@ -23,7 +23,6 @@ export const createDrawName = onCall(
     },
     async (request) => {
         try {
-            console.log("AUTH UID:", request.auth?.uid);
             /** 🔐 Auth */
             requireAdminAuth(request);
 

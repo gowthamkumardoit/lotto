@@ -53,7 +53,6 @@ export default function AdminPayoutSettingsPage() {
     const uid = auth.currentUser.uid;
     const fileRef = ref(storage, `payouts/upi/${uid}/${id}-${Date.now()}.png`);
 
-    console.log("fileref", storage);
     setUploadingId(id);
     setUploadProgress(0);
 

@@ -225,8 +225,6 @@ export default function Sidebar() {
         const token = await user.getIdTokenResult(true);
         const rawRole = token.claims.role;
 
-        console.log("ALL CLAIMS:", token.claims);
-
         if (typeof rawRole === "string") {
           setRole(rawRole.toUpperCase() as Role);
         } else {

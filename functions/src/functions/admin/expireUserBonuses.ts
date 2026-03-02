@@ -9,8 +9,6 @@ export const expireUserBonuses = functions
   .onRun(async () => {
     const now = new Date();
 
-    console.log("Running user bonus expiry check:", now);
-
     // 🔥 Collection Group Query (IMPORTANT)
     const snapshot = await db
       .collectionGroup("bonuses")
@@ -19,7 +17,6 @@ export const expireUserBonuses = functions
       .get();
 
     if (snapshot.empty) {
-      console.log("No user bonuses to expire");
       return null;
     }
 
@@ -50,8 +47,6 @@ export const expireUserBonuses = functions
     }
 
     await batch.commit();
-
-    console.log(`Expired ${snapshot.size} user bonuses`);
 
     return null;
   });

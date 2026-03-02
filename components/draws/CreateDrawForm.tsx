@@ -37,21 +37,6 @@ export function CreateDrawForm({ onSuccess }: Props) {
       return;
     }
 
-    // TEMP: log data (later replace with Firebase call)
-    console.log({
-      name,
-      drawTime,
-      lockTime,
-      enable2D,
-      enable3D,
-      enable4D,
-      multipliers: {
-        "2D": multiplier2D,
-        "3D": multiplier3D,
-        "4D": multiplier4D,
-      },
-    });
-
     onSuccess();
   }
 

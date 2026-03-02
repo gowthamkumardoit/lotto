@@ -79,7 +79,6 @@ export default function DrawResultsPanel({ status }: { status: status }) {
     try {
       setSettling(true);
       const res = await settleDraw({ drawRunId });
-      console.log("settleDraw response:", res.data);
 
       toast.success("Winners declared successfully", {
         id: toastId,
@@ -94,7 +93,6 @@ export default function DrawResultsPanel({ status }: { status: status }) {
   }
 
   const loadTicketStats = async (result: DrawResult) => {
-    console.log("data.result", result);
     try {
       setLoadingStats(true);
 
@@ -104,10 +102,8 @@ export default function DrawResultsPanel({ status }: { status: status }) {
       >(functions, "getDrawTicketStats");
 
       const res = await getStats({ drawRunId, result });
-      console.log("response", res);
 
       setTicketStats(res.data);
-      console.log("ticketStats", ticketStats);
     } catch (err) {
       console.error("Failed to load ticket stats", err);
       setTicketStats({

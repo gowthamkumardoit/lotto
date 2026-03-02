@@ -62,8 +62,6 @@ export default function DepositReviewDrawer({
 
   if (!deposit) return null;
 
-  console.log("deposit", deposit);
-
   const isPending = deposit.status === "SUBMITTED";
 
   return (

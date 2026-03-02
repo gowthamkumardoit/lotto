@@ -15,7 +15,6 @@ export default function AdminLoginPage() {
       if (!loading && user) {
         const token = await user.getIdTokenResult();
         const role = token.claims.role as string | undefined;
-        console.log("role",role);
 
         const roleRedirectMap: Record<string, string> = {
           admin: "/admin",

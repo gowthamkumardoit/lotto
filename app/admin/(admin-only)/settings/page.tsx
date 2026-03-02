@@ -92,7 +92,6 @@ export default function AdminSettingsPage() {
   async function handleSave() {
     if (!form) return;
     setSaving(true);
-    console.log("form", form);
     try {
       const fn = httpsCallable(functions, "updatePlatformSettings");
       await fn(form);
