@@ -97,7 +97,7 @@ export const purchase3DTicket = onCall(
           number: num,
           amount: amt,
           type: "3D",
-          status: "PENDING",   // ✅ REQUIRED
+          status: "BOOKED",   // ✅ REQUIRED
           winAmount: 0,        // ✅ REQUIRED
           createdAt: FieldValue.serverTimestamp(),
           lockedAt: drawSnap.data()!.lockedAt ?? null,

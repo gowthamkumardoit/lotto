@@ -97,7 +97,7 @@ export const purchase4DTicket = onCall(
                     number: num,
                     amount: amt,
                     type: "4D",          // ✅ FIXED (THIS WAS THE BUG)
-                    status: "PENDING",   // ✅ REQUIRED
+                    status: "BOOKED",   // ✅ REQUIRED
                     winAmount: 0,        // ✅ REQUIRED
                     createdAt: FieldValue.serverTimestamp(),
                     lockedAt: drawSnap.data()!.lockedAt ?? null,

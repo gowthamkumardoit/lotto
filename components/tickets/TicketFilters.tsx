@@ -114,7 +114,7 @@ export function TicketFilterSidebar({
 
       {/* STATUS */}
       <Section title="Status">
-        {(["PENDING", "LOCKED", "WON", "LOST", "BOOKED"] as TicketStatus[]).map((s) => (
+        {(["BOOKED", "LOCKED", "WON", "LOST"] as TicketStatus[]).map((s) => (
           <CheckboxRow
             key={s}
             label={s.charAt(0) + s.slice(1).toLowerCase()}

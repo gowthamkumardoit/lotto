@@ -98,7 +98,7 @@ export const purchase2DTicket = onCall(
           number: num,
           amount: amt,
           type: "2D",
-          status: "PENDING",       // ✅ REQUIRED
+          status: "BOOKED",       // ✅ REQUIRED
           winAmount: 0,            // ✅ REQUIRED
           createdAt: FieldValue.serverTimestamp(),
           lockedAt: drawSnap.data()!.lockedAt ?? null,

@@ -93,12 +93,6 @@ export const settleDrawRun = onCall(
       .where("drawRunId", "==", drawRunId)
       .get();
 
-    if (ticketsSnap.empty) {
-      throw new HttpsError(
-        "failed-precondition",
-        "No tickets found for this draw",
-      );
-    }
 
     /* ───────── STEP 4: LOCK DRAW RUN (TX) ───────── */
     await db.runTransaction(async (tx) => {

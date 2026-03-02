@@ -119,7 +119,8 @@ export function DrawTable() {
 
     const q = query(
       collection(db, "drawRuns"),
-      where("date", "==", todayISO),
+      where("date", "in", [todayISO, tomorrowISO]),
+      orderBy("date", "asc"),
       orderBy("time", "asc"),
     );
 
@@ -149,7 +150,7 @@ export function DrawTable() {
           };
         });
 
-        setDraws(rows); // no manual sort needed now
+        setDraws(rows);
         setLoading(false);
       },
       (error) => {
@@ -159,7 +160,7 @@ export function DrawTable() {
     );
 
     return () => unsub();
-  }, [todayISO, refreshKey]);
+  }, [todayISO, tomorrowISO, refreshKey]);
 
   /* ---------------- ACTION HANDLERS ---------------- */
 
