@@ -57,10 +57,7 @@ export const lockDrawRun = onCall(
     });
 
     if (lockResult === "ALREADY_LOCKED") {
-      return {
-        success: true,
-        message: "Draw already locked",
-      };
+      console.log("Draw already locked. Continuing ticket lock.");
     }
 
     /* ───────── STEP 2: LOCK TICKETS (BATCH SAFE) ───────── */
@@ -82,6 +79,7 @@ export const lockDrawRun = onCall(
         batch.update(ticketDoc.ref, {
           status: "LOCKED",
           lockedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         lockedCount++;
       }
