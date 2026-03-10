@@ -24,7 +24,7 @@ import { useSalesAnalytics } from "@/hooks/useSalesAnalytics";
 import { usePayoutAnalytics } from "@/hooks/usePayoutAnalytics";
 import { useAuditAnalytics } from "@/hooks/useAuditAnalytics";
 import { AuthRoleGuard } from "@/components/auth/AuthRoleGuard";
-
+import { usePlatformBonusAnalytics } from "@/hooks/usePlatformBonusAnalytics";
 /* ---------------- DATE HELPERS ---------------- */
 
 type DateRange = "today" | "yesterday" | "last7" | "total" | "custom";
@@ -109,6 +109,8 @@ export default function AdminDashboardPage() {
   const salesGold = useSalesAnalytics("kuberGold");
   const payoutGold = usePayoutAnalytics("kuberGold");
   const auditsGold = useAuditAnalytics("kuberGold");
+
+  const bonus = usePlatformBonusAnalytics();
 
   const sales = product === "kuberGold" ? salesGold : salesX;
   const payout = product === "kuberGold" ? payoutGold : payoutX;
@@ -313,6 +315,42 @@ export default function AdminDashboardPage() {
             value={`₹${net.toLocaleString()}`}
             positive={net >= 0}
           />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Bonus Analytics</CardTitle>
+            </CardHeader>
+
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Issued</p>
+                <p className="text-lg font-semibold">
+                  ₹{bonus.totalIssued.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Used</p>
+                <p className="text-lg font-semibold text-green-600">
+                  ₹{bonus.totalUsed.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Remaining</p>
+                <p className="text-lg font-semibold text-amber-600">
+                  ₹{bonus.totalRemaining.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Expired</p>
+                <p className="text-lg font-semibold text-red-500">
+                  ₹{bonus.totalExpiredUnused.toLocaleString()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* TABS */}

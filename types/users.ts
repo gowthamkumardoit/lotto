@@ -15,6 +15,7 @@ export type User = {
   createdAt: Date;
   lastLoginAt?: Date;
   role: string;
+  email: string;
 };
 
 // users collection shape
@@ -23,4 +24,5 @@ export type UserProfile = {
   username?: string;
   displayName?: string;
   phone?: string;
+  email?: string;
 };

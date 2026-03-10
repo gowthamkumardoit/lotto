@@ -54,7 +54,6 @@ export default function BankAccountRequestsPage() {
   const [accounts, setAccounts] = useState<BankAccountRequest[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [openReview, setOpenReview] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   /* ---------------- Load Accounts ---------------- */
 
@@ -93,18 +92,6 @@ export default function BankAccountRequestsPage() {
     loadAccounts();
   }, []);
 
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      await loadAccounts();
-      toast.success("Refreshed");
-    } catch {
-      toast.error("Refresh failed");
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   /* ---------------- Users ---------------- */
 
   const userIds = useMemo(
@@ -113,6 +100,23 @@ export default function BankAccountRequestsPage() {
   );
 
   const usersById = useUsersByIds(userIds);
+
+  /* ---------------- Global Search ---------------- */
+
+  const globalFilterFn = (row: any, _: any, value: string) => {
+    const s = value.toLowerCase();
+    if (!s) return true;
+
+    const user = usersById[row.original.userId];
+
+    return (
+      row.original.bankName?.toLowerCase().includes(s) ||
+      row.original.ifsc?.toLowerCase().includes(s) ||
+      row.original.accountNumber?.toLowerCase().includes(s) ||
+      user?.phone?.toLowerCase().includes(s) ||
+      user?.email?.toLowerCase().includes(s)
+    );
+  };
 
   /* ---------------- Columns ---------------- */
 
@@ -126,13 +130,25 @@ export default function BankAccountRequestsPage() {
           const user = usersById[uid];
 
           return (
-            <div>
+            <div className="leading-tight">
               <div className="font-medium">
-                {user?.username || user?.displayName || uid.slice(0, 8) + "…"}
+                {user?.username ||
+                  user?.displayName ||
+                  user?.phone ||
+                  uid.slice(0, 8) + "…"}
               </div>
-              <div className="text-xs text-muted-foreground">
-                📱 {user?.phone ?? "—"}
-              </div>
+
+              {user?.phone && (
+                <div className="text-xs text-muted-foreground">
+                  📱 {user.phone}
+                </div>
+              )}
+
+              {user?.email && (
+                <div className="text-xs text-muted-foreground break-all">
+                  ✉ {user.email}
+                </div>
+              )}
             </div>
           );
         },
@@ -193,6 +209,7 @@ export default function BankAccountRequestsPage() {
     columns,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn,
     initialState: {
       pagination: {
         pageSize: 10,
@@ -204,21 +221,21 @@ export default function BankAccountRequestsPage() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  /* ---------------- UI ---------------- */
+
   return (
     <RefreshWrapper onRefresh={loadAccounts}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Bank Account Requests</h1>
-            <p className="text-sm text-muted-foreground">
-              Review and approve user bank accounts
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold">Bank Account Requests</h1>
+          <p className="text-sm text-muted-foreground">
+            Review and approve user bank accounts
+          </p>
         </div>
 
         <Input
           type="search"
-          placeholder="Search by user / phone / bank / IFSC"
+          placeholder="Search by phone / email / bank / IFSC"
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="w-96"

@@ -26,6 +26,7 @@ type Props = {
 /* ---------------- Component ---------------- */
 
 export function UsersTable({ table, loading, onSelect }: Props) {
+  console.log("table", table);
   if (loading) {
     return (
       <div className="border rounded-xl p-10 text-center text-muted-foreground">
@@ -80,7 +81,7 @@ export function UsersTable({ table, loading, onSelect }: Props) {
         <TableBody>
           {table.getRowModel().rows.map((row) => {
             const u = row.original;
-
+            console.log("u -----", u);
             return (
               <TableRow
                 key={row.id}

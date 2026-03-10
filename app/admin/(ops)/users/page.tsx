@@ -117,6 +117,7 @@ export default function UsersPage() {
           walletBalance: d.walletBalance ?? 0,
           lockedBalance: d.lockedBalance ?? 0,
           bonusBalance: d.bonusBalance ?? 0,
+          email: d.email ?? "-",
           status, // ✅ normalized ONCE
           role: d.role ?? "user",
           createdAt: (d.createdAt as Timestamp).toDate(),
@@ -140,8 +141,22 @@ export default function UsersPage() {
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       {
-        accessorKey: "phone",
-        header: "Phone",
+        id: "contact",
+        header: "Email / Phone",
+        cell: ({ row }) => {
+          const u = row.original;
+
+          return (
+            <div className="flex flex-col leading-tight">
+              {u.email && u.email !== "-" && (
+                <span className="text-sm font-medium">{u.email}</span>
+              )}
+              {u.phone && u.phone !== "-" && (
+                <span className="text-sm text-muted-foreground">{u.phone}</span>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "provider",

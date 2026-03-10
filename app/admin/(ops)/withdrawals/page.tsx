@@ -112,9 +112,29 @@ export default function WithdrawalRequestsPage() {
               <div className="font-medium">
                 {user?.username || user?.displayName || uid.slice(0, 8) + "…"}
               </div>
-              <div className="text-xs text-muted-foreground">
+              {/* <div className="text-xs text-muted-foreground">
                 📱 {user?.phone ?? "—"}
-              </div>
+              </div> */}
+            </div>
+          );
+        },
+      },
+      {
+        id: "contact",
+        header: "Contact",
+        cell: ({ row }) => {
+          const uid = row.original.userId;
+          const user = usersById[uid];
+
+          return (
+            <div className="leading-tight">
+              <div>{user?.phone ?? "—"}</div>
+
+              {user?.email && (
+                <div className="text-xs text-muted-foreground break-all">
+                  {user.email}
+                </div>
+              )}
             </div>
           );
         },
@@ -178,6 +198,7 @@ export default function WithdrawalRequestsPage() {
 
       return (
         u?.phone?.toLowerCase().includes(search) ||
+        u?.email?.toLowerCase().includes(search) ||
         u?.username?.toLowerCase().includes(search) ||
         u?.displayName?.toLowerCase().includes(search) ||
         w.amount.toString().includes(search)

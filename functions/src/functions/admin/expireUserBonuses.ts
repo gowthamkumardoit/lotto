@@ -41,6 +41,7 @@ export const expireUserBonuses = functions
       // Mark bonus expired
       batch.update(doc.ref, {
         status: "EXPIRED",
+        expiredUnused: remaining,
         remaining: 0,
         expiredAt: FieldValue.serverTimestamp(),
       });

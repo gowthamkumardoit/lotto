@@ -119,8 +119,7 @@ export function DrawTable() {
 
     const q = query(
       collection(db, "drawRuns"),
-      where("date", "in", [todayISO, tomorrowISO]),
-      orderBy("date", "asc"),
+      orderBy("date", "desc"),
       orderBy("time", "asc"),
     );
 
@@ -249,6 +248,7 @@ export function DrawTable() {
             <TableHeader>
               <TableRow className="bg-muted/40">
                 <TableHead className="pl-6">Draw</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>Time</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Sales</TableHead>
@@ -264,6 +264,10 @@ export function DrawTable() {
                       {draw.name}
                       {draw.date === tomorrowISO && <NewBadge />}
                     </div>
+                  </TableCell>
+
+                  <TableCell>
+                    {new Date(draw.date).toLocaleDateString("en-IN")}
                   </TableCell>
 
                   <TableCell>{draw.time}</TableCell>

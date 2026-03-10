@@ -17,6 +17,7 @@ import {
   Calendar,
   User as UserIcon,
   Wallet as WalletIcon,
+  Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -101,7 +102,17 @@ export default function UserDetailsDrawer({
               </div>
 
               <div className="flex-1">
-                <div className="font-semibold">{user.phone}</div>
+                <div className="space-y-1">
+                  {user.phone && user.phone !== "-" && (
+                    <div className="text-sm font-semibold">{user.phone}</div>
+                  )}
+
+                  {user.email && user.email !== "-" && (
+                    <div className="text-xs text-muted-foreground break-all">
+                      {user.email}
+                    </div>
+                  )}
+                </div>
                 <div className="pt-1">
                   <Badge
                     className={
@@ -119,6 +130,11 @@ export default function UserDetailsDrawer({
             {/* Info */}
             <div className="rounded-lg border divide-y">
               <InfoRow icon={Phone} label="Phone" value={user.phone} />
+
+              {user.email && user.email !== "-" && (
+                <InfoRow icon={Mail} label="Email" value={user.email} />
+              )}
+
               <InfoRow
                 icon={Calendar}
                 label="Joined"
@@ -214,10 +230,14 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 text-sm">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <span className="text-muted-foreground">{label}</span>
-      <span className="ml-auto font-medium">{value}</span>
+    <div className="flex items-start gap-3 px-4 py-3 text-sm">
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+
+      <span className="text-muted-foreground shrink-0">{label}</span>
+
+      <span className="ml-auto font-medium text-right break-all max-w-[65%]">
+        {value}
+      </span>
     </div>
   );
 }

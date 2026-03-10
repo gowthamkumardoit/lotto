@@ -74,23 +74,43 @@ export default function DepositRequestsPage() {
         cell: ({ row }) => {
           const uid = row.original.userId;
           const user = usersById[uid];
-
+          console.log("row.original", user);
           return (
-            <div>
+            <div className="leading-tight">
               <div className="font-medium">{getUserLabel(uid, usersById)}</div>
-              <div className="text-xs text-muted-foreground">
-                📱 {user?.phone ?? "—"}
-              </div>
+
+              {user?.phone && (
+                <div className="text-xs text-muted-foreground">
+                  📱 {user.phone}
+                </div>
+              )}
+
+              {user?.email && (
+                <div className="text-xs text-muted-foreground break-all">
+                  ✉ {user.email}
+                </div>
+              )}
             </div>
           );
         },
       },
       {
-        id: "mobile",
-        header: "Mobile",
+        id: "contact",
+        header: "Contact",
         cell: ({ row }) => {
           const uid = row.original.userId;
-          return usersById[uid]?.phone ?? "—";
+          const user = usersById[uid];
+
+          return (
+            <div className="leading-tight">
+              <div>{user?.phone ?? "—"}</div>
+              {user?.email && (
+                <div className="text-xs text-muted-foreground break-all">
+                  {user.email}
+                </div>
+              )}
+            </div>
+          );
         },
       },
       {
@@ -170,6 +190,7 @@ export default function DepositRequestsPage() {
       topup.amount?.toString().includes(search) === true ||
       user?.phone?.toLowerCase().includes(search) === true ||
       user?.username?.toLowerCase().includes(search) === true ||
+      user?.displayName?.toLowerCase().includes(search) === true ||
       user?.displayName?.toLowerCase().includes(search) === true
     );
   };

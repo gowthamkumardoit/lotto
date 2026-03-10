@@ -33,6 +33,7 @@ import {
 } from "@/services/upiWithdrawService";
 import { toast } from "sonner";
 import { RefreshWrapper } from "@/components/ui/RefreshWrapper";
+import { useUsersMap } from "@/hooks/useUsersMap";
 
 export default function UpiWithdrawRequestsPage() {
   const { data, loading, refetch } = useUpiWithdrawRequests();
@@ -42,15 +43,26 @@ export default function UpiWithdrawRequestsPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const userIds = useMemo(
+    () => [...new Set(data.map((d) => d.userId))],
+    [data],
+  );
+
+  const usersMap = useUsersMap(userIds);
+
   /* ---------------- Filter ---------------- */
 
   const globalFilterFn: FilterFn<UpiWithdrawalRequest> = (row, _, value) => {
     const s = String(value).toLowerCase();
     if (!s) return true;
 
+    const u = usersMap[row.original.userId];
+
     return (
       row.original.userId.toLowerCase().includes(s) ||
-      row.original.primaryUpi.toLowerCase().includes(s)
+      row.original.primaryUpi.toLowerCase().includes(s) ||
+      (u?.phone ?? "").toLowerCase().includes(s) ||
+      (u?.email ?? "").toLowerCase().includes(s)
     );
   };
 
@@ -60,13 +72,23 @@ export default function UpiWithdrawRequestsPage() {
     () => [
       {
         header: "User",
-        cell: ({ row }) => (
-          <div className="text-sm">
-            <div className="font-medium">
-              {row.original.userId.slice(0, 8)}…
+        cell: ({ row }) => {
+          const u = usersMap[row.original.userId];
+
+          return (
+            <div className="text-sm leading-tight">
+              <div className="font-medium">
+                {u?.phone ?? row.original.userId.slice(0, 8)}
+              </div>
+
+              {u?.email && u.email !== "-" && (
+                <div className="text-xs text-muted-foreground break-all">
+                  {u.email}
+                </div>
+              )}
             </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         accessorKey: "primaryUpi",
@@ -144,7 +166,7 @@ export default function UpiWithdrawRequestsPage() {
           ),
       },
     ],
-    [actionId],
+    [actionId, usersMap],
   );
 
   const table = useReactTable({
@@ -162,7 +184,7 @@ export default function UpiWithdrawRequestsPage() {
   return (
     <RefreshWrapper onRefresh={refetch}>
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">UPI Withdraw Requests</h1>
+        <h1 className="text-2xl font-semibold">UPI Requests</h1>
 
         <Input
           className="w-80"
