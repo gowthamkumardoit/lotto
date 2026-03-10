@@ -142,8 +142,8 @@ export { listRoleAssignments } from "./functions/roles/listRoleAssignments";
 export { sendSupportMessage } from "./functions/telegram/sendSupportMessage";
 export { telegramChatWebhook } from "./functions/telegram/telegramChatWebhook";
 export { postToTelegramChannel } from "./functions/telegram/telegramChannel";
-export { onDrawStatusChanged } from "./functions/telegram/onDrawStatusChanged";
-export { onKuberGoldStatusChanged } from "./functions/telegram/onKuberGoldStatusChanged";
+export { onDrawStatusChanged, onDrawCreated } from "./functions/telegram/onDrawStatusChanged";
+export { onKuberGoldStatusChanged, onKuberGoldCreated } from "./functions/telegram/onKuberGoldStatusChanged";
 
 /* ============================================================
  * 🔟 STATS / AGGREGATIONS (Firestore Triggers)
